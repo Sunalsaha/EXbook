@@ -8,8 +8,15 @@ export default function index() {
      //<Redirect href="/(screen)/Dashboard" />
    // <Redirect href="/(screen)/Profile" />
     // <Redirect href="/(screen)/EditProfile" />
-     <Redirect href="/(screen)/BookNearMe" />
+     //<Redirect href="/(screen)/BookNearMe" />
      //<Redirect href="/(screen)/FilterScreen" />
      //<Redirect href="/(screen)/SortScreen" />
+      //<Redirect href="/(screen)/Disclosure" />
+      //<Redirect href="/(screen)/Sellbook1" />
+      //<Redirect href="/(screen)/Sellbook2" />
+      //<Redirect href="/(screen)/Sellbook3" />
+      //<Redirect href="/(screen)/Preview" />
+      <Redirect href="/(screen)/Support" />
+
   );
 }
