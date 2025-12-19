@@ -2,7 +2,6 @@ import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
-  Dimensions,
   Image,
   Keyboard,
   KeyboardAvoidingView,
@@ -14,15 +13,25 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const { width, height } = Dimensions.get("window");
+// Responsive scaling utilities
+const scale = (size: number, width: number) => (width / 375) * size;
+const verticalScale = (size: number, height: number) => (height / 812) * size;
+const moderateScale = (size: number, factor: number = 0.5, width: number) =>
+  size + (scale(size, width) - size) * factor;
 
 const CredencialForm = () => {
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState("");
   const registeredMobileNo = "9733019100";
+
+  const styles = createStyles(width, height, insets);
 
   return (
     <LinearGradient colors={["#70F3FA", "#FFFFFF"]} style={{ flex: 1 }}>
@@ -34,6 +43,7 @@ const CredencialForm = () => {
           <ScrollView
             contentContainerStyle={styles.scroll}
             keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
             {/* ===== LOGO ===== */}
             <View style={styles.centerSection}>
@@ -82,26 +92,52 @@ const CredencialForm = () => {
                 <Text style={styles.label}>Address</Text>
 
                 {/* USE LOCATION */}
-                <TouchableOpacity activeOpacity={0.85} onPress={()=>{router.push('/(screen)/UserCurrentLocation')}}>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    router.push("/(screen)/UserCurrentLocation");
+                  }}
+                >
                   <View style={[styles.actionRow, styles.locationRow]}>
                     <View style={styles.rowLeft}>
-                      <Ionicons name="locate-outline" size={18} color="#1E6BFF" />
+                      <Ionicons
+                        name="locate-outline"
+                        size={scale(18, width)}
+                        color="#1E6BFF"
+                      />
                       <Text style={styles.locationText}>
                         Use current Location
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color="#1E6BFF" />
+                    <Ionicons
+                      name="chevron-forward"
+                      size={scale(18, width)}
+                      color="#1E6BFF"
+                    />
                   </View>
                 </TouchableOpacity>
 
                 {/* ADD ADDRESS */}
-                <TouchableOpacity activeOpacity={0.85} onPress={()=>{router.push('/(screen)/UserManualLocation')}}>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    router.push("/(screen)/UserManualLocation");
+                  }}
+                >
                   <View style={[styles.actionRow, styles.addRow]}>
                     <View style={styles.rowLeft}>
-                      <MaterialIcons name="add" size={18} color="#FF6A00" />
+                      <MaterialIcons
+                        name="add"
+                        size={scale(18, width)}
+                        color="#FF6A00"
+                      />
                       <Text style={styles.addText}>Add Address</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color="#FF6A00" />
+                    <Ionicons
+                      name="chevron-forward"
+                      size={scale(18, width)}
+                      color="#FF6A00"
+                    />
                   </View>
                 </TouchableOpacity>
               </BlurView>
@@ -122,131 +158,150 @@ const CredencialForm = () => {
 
 export default CredencialForm;
 
-/* ================= STYLES ================= */
+/* ================= RESPONSIVE STYLES ================= */
 
-const styles = StyleSheet.create({
-  scroll: {
-    flexGrow: 1,
-    alignItems: "center",
-    paddingBottom: 30,
-  },
+const createStyles = (width: number, height: number, insets: any) => {
+  const s = (size: number) => scale(size, width);
+  const vs = (size: number) => verticalScale(size, height);
+  const ms = (size: number, factor?: number) =>
+    moderateScale(size, factor, width);
 
-  centerSection: {
-    height: height * 0.33,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  return StyleSheet.create({
+    scroll: {
+      flexGrow: 1,
+      alignItems: "center",
+      paddingTop: Math.max(insets.top, vs(20)),
+      paddingBottom: Math.max(insets.bottom, vs(30)),
+      paddingHorizontal: s(10),
+    },
 
-  logo: {
-    width: width * 0.7,
-    height: 155,
-  },
+    centerSection: {
+      minHeight: vs(200),
+      justifyContent: "center",
+      alignItems: "center",
+      paddingVertical: vs(20),
+      marginBottom: vs(15), // Extra space after slogan
+    },
 
-  slogan: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginTop: -10,
-    color: "#000",
-    fontFamily: "Potta One",
-  },
+    logo: {
+      width: width * 0.7,
+      height: vs(155),
+      maxWidth: s(280),
+    },
 
-  cardStack: {
-    width: "100%",
-    alignItems: "center",
-    marginTop: "6%",
-  },
+    slogan: {
+      fontSize: ms(20),
+      fontWeight: "700",
+      marginTop: vs(-10),
+      color: "#000",
+      fontFamily: "Potta One",
+    },
 
-  character: {
-    width: width * 0.28,
-    height: 85,
-    position: "absolute",
-    top: -82,
-    zIndex: 10,
-  },
+    cardStack: {
+      width: "100%",
+      alignItems: "center",
+      marginTop: vs(70), // Increased from vs(50) to vs(70)
+      marginBottom: vs(20),
+    },
 
-  card: {
-    width: "90%",
-    paddingTop: 20,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    character: {
+      width: width * 0.28,
+      height: vs(85),
+      maxWidth: s(110),
+      position: "absolute",
+      top: vs(-60), // Adjusted from vs(-70) to vs(-60) for better positioning
+      zIndex: 10,
+    },
 
-    borderWidth: 0.5,
-    borderColor: "#7CF3FA",
+    card: {
+      width: "90%",
+      maxWidth: s(420),
+      paddingTop: vs(30), // Increased from vs(20) to vs(30) for more top padding
+      paddingHorizontal: s(20),
+      paddingBottom: vs(20),
 
-    borderTopLeftRadius: 27,
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 27,
-    borderBottomLeftRadius: 10,
+      borderWidth: 0.5,
+      borderColor: "#7CF3FA",
 
-    elevation: 1,
-    overflow: "hidden",
-  },
+      borderTopLeftRadius: ms(27),
+      borderTopRightRadius: ms(10),
+      borderBottomRightRadius: ms(27),
+      borderBottomLeftRadius: ms(10),
 
-  label: {
-    fontSize: 15,
-    fontWeight: "400",
-    marginBottom: 6,
-    color: "#000",
-  },
+      elevation: 1,
+      overflow: "hidden",
+    },
 
-  input: {
-    backgroundColor: "#83AAAC",
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    fontSize: 16,
-    color: "#000",
-    marginBottom: 9,
-  },
+    label: {
+      fontSize: ms(15),
+      fontWeight: "400",
+      marginBottom: vs(6),
+      color: "#000",
+    },
 
-  disabledInput: {
-    backgroundColor: "#8FD7DB",
-    borderWidth:1,
-    borderColor:'#44D6FF'
-  },
+    input: {
+      backgroundColor: "#83AAAC",
+      borderRadius: ms(8),
+      paddingVertical: vs(10),
+      paddingHorizontal: s(14),
+      fontSize: ms(16),
+      color: "#000",
+      marginBottom: vs(9),
+      minHeight: vs(44),
+    },
 
-  actionRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginBottom: 12,
-  },
+    disabledInput: {
+      backgroundColor: "#8FD7DB",
+      borderWidth: 1,
+      borderColor: "#44D6FF",
+    },
 
-  rowLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
+    actionRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      borderRadius: ms(8),
+      paddingVertical: vs(12),
+      paddingHorizontal: s(14),
+      marginBottom: vs(12),
+      minHeight: vs(44),
+    },
 
-  locationRow: {
-    borderWidth: 1,
-    borderColor: "#0047F9",
-    backgroundColor: "#0047F900",
-  },
+    rowLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: s(8),
+    },
 
-  locationText: {
-    fontSize: 16,
-    fontWeight: "400",
-    color: "#1E6BFF",
-  },
+    locationRow: {
+      borderWidth: 1,
+      borderColor: "#0047F9",
+      backgroundColor: "#0047F900",
+    },
 
-  addRow: {
-    borderWidth: 1,
-    borderColor: "#FF4444",
-    backgroundColor: "#8FD7DB00",
-  },
+    locationText: {
+      fontSize: ms(16),
+      fontWeight: "400",
+      color: "#1E6BFF",
+    },
 
-  addText: {
-    fontSize: 16,
-    fontWeight: "400",
-    color: "#F95700E0",
-  },
+    addRow: {
+      borderWidth: 1,
+      borderColor: "#FF4444",
+      backgroundColor: "#8FD7DB00",
+    },
 
-  paper: {
-    width: "100%",
-    height: "30%",
-  },
-});
+    addText: {
+      fontSize: ms(16),
+      fontWeight: "400",
+      color: "#F95700E0",
+    },
+
+    paper: {
+      width: "100%",
+      height: vs(200),
+      maxWidth: s(500),
+      marginTop: vs(10),
+    },
+  });
+};
