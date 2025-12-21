@@ -16,6 +16,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
+// Import your GIF
+import loadingGif from "../../assets/images/loading.gif";
+
 interface Book {
   id: number;
   title: string;
@@ -73,13 +76,14 @@ const books: Book[] = [
 const Disclosure = () => {
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
   const IMAGE_HEIGHT = SCREEN_HEIGHT * 0.35;
-  
+
   const [location] = useState<string>(
     "Action Area I, 1/2, Newtown, New Town, Cha..."
   );
   const [isDisclosureOpen, setIsDisclosureOpen] = useState<boolean>(false);
   const [isBuyNowExpanded, setIsBuyNowExpanded] = useState<boolean>(false);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+  const [isBuying, setIsBuying] = useState<boolean>(false);
   const flatListRef = useRef<FlatList>(null);
 
   const featuredBook = books[0];
@@ -92,7 +96,6 @@ const Disclosure = () => {
     setCurrentImageIndex(index);
   };
 
-  // Handler to toggle the seller location expansion
   const toggleSellerLocation = () => {
     setIsBuyNowExpanded(!isBuyNowExpanded);
   };
@@ -116,6 +119,13 @@ const Disclosure = () => {
       />
     </View>
   );
+
+  const handleBuy = () => {
+    setIsBuying(true);
+    setTimeout(() => {
+      setIsBuying(false);
+    }, 2000);
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#d4f1f4" }}>
@@ -320,9 +330,7 @@ const Disclosure = () => {
                 >
                   ₹2,000
                 </Text>
-                <View
-                  style={{ flexDirection: "row", alignItems: "baseline" }}
-                >
+                <View style={{ flexDirection: "row", alignItems: "baseline" }}>
                   <Text
                     style={{
                       fontSize: 20,
@@ -711,6 +719,7 @@ const Disclosure = () => {
               marginTop: 20,
               marginBottom: 20,
             }}
+            onPress={handleBuy}
           >
             <Text
               style={{
@@ -845,9 +854,7 @@ const Disclosure = () => {
                     >
                       ₹{book.priceMrp.toLocaleString()}
                     </Text>
-                    <View
-                      style={{ flexDirection: "row", alignItems: "baseline" }}
-                    >
+                    <View style={{ flexDirection: "row", alignItems: "baseline" }}>
                       <Text
                         style={{
                           fontSize: 9,
@@ -873,6 +880,48 @@ const Disclosure = () => {
             ))}
           </View>
         </ScrollView>
+
+        {/* Loading overlay with GIF */}
+        {isBuying && (
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.4)",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{
+                width: SCREEN_WIDTH * 0.6,
+                padding: 20,
+                borderRadius: 16,
+                backgroundColor: "#fff",
+                alignItems: "center",
+              }}
+            >
+              <Image
+                source={loadingGif}
+                style={{ width: 120, height: 120, marginBottom: 10 }}
+                resizeMode="contain"
+              />
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "500",
+                  color: "#374151",
+                  textAlign: "center",
+                }}
+              >
+                Processing your order...
+              </Text>
+            </View>
+          </View>
+        )}
       </SafeAreaView>
     </View>
   );

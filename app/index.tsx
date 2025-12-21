@@ -14,9 +14,11 @@ export default function index() {
       //<Redirect href="/(screen)/Disclosure" />
       //<Redirect href="/(screen)/Sellbook1" />
       //<Redirect href="/(screen)/Sellbook2" />
-      //<Redirect href="/(screen)/Sellbook3" />
+      <Redirect href="/(screen)/Sellbook3" />
       //<Redirect href="/(screen)/Preview" />
-      <Redirect href="/(screen)/Support" />
-
+      //<Redirect href="/(screen)/Support" />
+      //<Redirect href="/(screen)/OrdersScreen" />
+      //<Redirect href="/(screen)/OrderDetailsScreen" />
+  
   );
 }

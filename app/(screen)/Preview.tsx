@@ -680,7 +680,7 @@ const Preview: React.FC = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.loadingContainer}>
             <Image
-              source={require('../../assets/images/loding.gif')}
+              source={require('../../assets/images/loading.gif')}
               style={styles.loadingGif}
               resizeMode="contain"
             />
