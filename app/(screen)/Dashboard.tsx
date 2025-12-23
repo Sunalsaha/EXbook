@@ -458,7 +458,7 @@ const Dashboard = () => {
                 Search books, authors, subjects
               </Text>
               <View style={styles.micDivider} />
-              <Ionicons name="mic" size={scale(22, width)} color="#003EF9" />
+              <Ionicons name="mic" size={scale(22, width)} color="#000000ff" />
             </View>
           </TouchableOpacity>
         </View>

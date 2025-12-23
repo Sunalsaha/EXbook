@@ -11,10 +11,12 @@ import {
   Alert,
   TextInput,
   useWindowDimensions,
+  Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
 
 interface ProfileData {
   name: string;
@@ -27,7 +29,7 @@ interface ProfileData {
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
 const ProfileScreen: React.FC = () => {
-  const { width, height } = useWindowDimensions(); // preferred responsive API [web:57]
+  const { width, height } = useWindowDimensions();
   const styles = useMemo(() => makeStyles(width, height), [width, height]);
 
   const [profileData, setProfileData] = useState<ProfileData>({
@@ -39,10 +41,10 @@ const ProfileScreen: React.FC = () => {
   });
 
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
-
-  // ✅ Email: allow typing, but commit only on Update profile
+  const [pendingAvatarUri, setPendingAvatarUri] = useState<string | null>(null);
+  const [showCropPreview, setShowCropPreview] = useState(false);
+  const [showImageViewer, setShowImageViewer] = useState(false);
   const [pendingEmail, setPendingEmail] = useState(profileData.email);
-
   const [editingField, setEditingField] = useState<keyof ProfileData | null>(null);
   const [isDirty, setIsDirty] = useState(false);
 
@@ -74,8 +76,8 @@ const ProfileScreen: React.FC = () => {
     });
 
     if (!result.canceled) {
-      setAvatarUri(result.assets[0].uri);
-      setIsDirty(true);
+      setPendingAvatarUri(result.assets[0].uri);
+      setShowCropPreview(true);
     }
   };
 
@@ -90,9 +92,21 @@ const ProfileScreen: React.FC = () => {
     });
 
     if (!result.canceled) {
-      setAvatarUri(result.assets[0].uri);
-      setIsDirty(true);
+      setPendingAvatarUri(result.assets[0].uri);
+      setShowCropPreview(true);
     }
+  };
+
+  const confirmCroppedImage = () => {
+    setAvatarUri(pendingAvatarUri);
+    setIsDirty(true);
+    setShowCropPreview(false);
+    setPendingAvatarUri(null);
+  };
+
+  const cancelCroppedImage = () => {
+    setShowCropPreview(false);
+    setPendingAvatarUri(null);
   };
 
   const isValidEmail = (email: string) =>
@@ -120,35 +134,44 @@ const ProfileScreen: React.FC = () => {
 
   return (
     <LinearGradient
-  colors={["#67E8F9", "#E0E7FF"]}
-  start={{ x: 0,y: 0}}
-  end={{ x: 1, y: 1}}
-  style={styles.container}
->
+      colors={["#67E8F9", "#E0E7FF"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.container}
+    >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
+        {/* Header with Back Button */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            activeOpacity={0.7}
+            onPress={() => router.push("/(screen)/Profile")}
+          >
             <Ionicons name="arrow-back" size={22} color="black" />
             <Text style={styles.headerText}>Your profile</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Avatar */}
+        {/* Avatar - Clickable to view full screen */}
         <View style={styles.hero}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatarWrapper}>
-              <View style={styles.avatarRing}>
-                <Image
-                  source={
-                    avatarUri
-                      ? { uri: avatarUri }
-                      : require("../../assets/images/profile.png")
-                  }
-                  style={styles.profileImage}
-                  resizeMode="cover"
-                />
-              </View>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setShowImageViewer(true)}
+              >
+                <View style={styles.avatarRing}>
+                  <Image
+                    source={
+                      avatarUri
+                        ? { uri: avatarUri }
+                        : require("../../assets/images/profile.png")
+                    }
+                    style={styles.profileImage}
+                    resizeMode="cover"
+                  />
+                </View>
+              </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.editBadge}
@@ -258,6 +281,78 @@ const ProfileScreen: React.FC = () => {
           <Text style={styles.updateButtonText}>Update profile</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Crop Preview Modal */}
+      <Modal
+        visible={showCropPreview}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={cancelCroppedImage}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.previewCard}>
+            <Text style={styles.previewTitle}>Save this photo?</Text>
+            
+            {pendingAvatarUri && (
+              <Image
+                source={{ uri: pendingAvatarUri }}
+                style={styles.previewImage}
+                resizeMode="cover"
+              />
+            )}
+
+            <View style={styles.previewButtons}>
+              <TouchableOpacity
+                style={[styles.previewButton, styles.cancelButton]}
+                onPress={cancelCroppedImage}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.previewButton, styles.saveButton]}
+                onPress={confirmCroppedImage}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.saveButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Full Screen Image Viewer Modal */}
+      <Modal
+        visible={showImageViewer}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowImageViewer(false)}
+      >
+        <View style={styles.imageViewerOverlay}>
+          {/* Close Button */}
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setShowImageViewer(false)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="close" size={32} color="#fff" />
+          </TouchableOpacity>
+
+          {/* Full Screen Image */}
+          <View style={styles.imageViewerContainer}>
+            <Image
+              source={
+                avatarUri
+                  ? { uri: avatarUri }
+                  : require("../../assets/images/profile.png")
+              }
+              style={styles.fullScreenImage}
+              resizeMode="contain"
+            />
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 };
@@ -330,9 +425,7 @@ function Field({
 }
 
 const makeStyles = (width: number, height: number) => {
-  // simple scaling based on width (stable across devices)
-  const s = (n: number) => (width / 375) * n; // 375 = iPhone base width
-  const r = (n: number) => Math.round(n);
+  const s = (n: number) => (width / 375) * n;
 
   const topPad = clamp(s(45), 24, 60);
   const sidePad = clamp(s(16), 12, 22);
@@ -341,8 +434,6 @@ const makeStyles = (width: number, height: number) => {
   const avatarRadius = avatarSize / 2;
 
   const heroHeight = clamp(s(150), 120, 170);
-
-  // how much avatar overlaps card area (removes your hard-coded marginTop: 180)
   const avatarOverlap = clamp(s(55), 42, 70);
 
   return StyleSheet.create({
@@ -378,7 +469,6 @@ const makeStyles = (width: number, height: number) => {
       alignItems: "center",
       justifyContent: "center",
       zIndex: 20,
-      // ✅ responsive overlap instead of marginTop: 180
       transform: [{ translateY: avatarOverlap }],
     },
 
@@ -423,7 +513,6 @@ const makeStyles = (width: number, height: number) => {
     formContent: {
       flex: 1,
       paddingHorizontal: clamp(s(18), 14, 22),
-      // keep the “image header space” but scale it
       paddingTop: clamp(s(92), 76, 110),
       paddingBottom: clamp(s(14), 10, 18),
     },
@@ -442,7 +531,7 @@ const makeStyles = (width: number, height: number) => {
       backgroundColor: "#FFFFFFFF",
       borderRadius: 6,
       zIndex: 2,
-      borderWidth: 1, // border needs borderWidth to render [web:37]
+      borderWidth: 1,
       borderColor: "#44D6FF",
     },
 
@@ -522,6 +611,111 @@ const makeStyles = (width: number, height: number) => {
       fontSize: clamp(s(16), 14, 17),
       fontWeight: "700",
       color: "rgba(255,255,255,0.78)",
+    },
+
+    // Crop Preview Modal styles
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.7)",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: sidePad,
+    },
+
+    previewCard: {
+      backgroundColor: "#fff",
+      borderRadius: 20,
+      padding: clamp(s(24), 20, 28),
+      width: "90%",
+      maxWidth: 400,
+      alignItems: "center",
+    },
+
+    previewTitle: {
+      fontSize: clamp(s(18), 16, 20),
+      fontWeight: "700",
+      color: "#000",
+      marginBottom: clamp(s(16), 12, 20),
+    },
+
+    previewImage: {
+      width: clamp(s(200), 180, 220),
+      height: clamp(s(200), 180, 220),
+      borderRadius: clamp(s(100), 90, 110),
+      borderWidth: 3,
+      borderColor: "#44D6FF",
+      marginBottom: clamp(s(20), 16, 24),
+    },
+
+    previewButtons: {
+      flexDirection: "row",
+      gap: clamp(s(12), 10, 14),
+      width: "100%",
+    },
+
+    previewButton: {
+      flex: 1,
+      height: clamp(s(48), 44, 52),
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    cancelButton: {
+      backgroundColor: "#F3F4F6",
+      borderWidth: 1,
+      borderColor: "#D1D5DB",
+    },
+
+    cancelButtonText: {
+      fontSize: clamp(s(15), 14, 16),
+      fontWeight: "600",
+      color: "#6B7280",
+    },
+
+    saveButton: {
+      backgroundColor: "rgba(20, 218, 232, 0.9)",
+      borderWidth: 1,
+      borderColor: "rgba(0,0,0,0.08)",
+    },
+
+    saveButtonText: {
+      fontSize: clamp(s(15), 14, 16),
+      fontWeight: "700",
+      color: "#fff",
+    },
+
+    // Full Screen Image Viewer styles
+    imageViewerOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.95)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+
+    closeButton: {
+      position: "absolute",
+      top: clamp(s(50), 40, 60),
+      right: clamp(s(20), 16, 24),
+      zIndex: 10,
+      width: clamp(s(44), 40, 48),
+      height: clamp(s(44), 40, 48),
+      borderRadius: clamp(s(22), 20, 24),
+      backgroundColor: "rgba(255,255,255,0.2)",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    imageViewerContainer: {
+      width: width,
+      height: height,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+
+    fullScreenImage: {
+      width: "100%",
+      height: "100%",
     },
   });
 };

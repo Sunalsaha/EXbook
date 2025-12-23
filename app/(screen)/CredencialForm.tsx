@@ -81,7 +81,7 @@ const CredencialForm = () => {
 
 
   return (
-    <LinearGradient colors={["#70F3FA", "#FFFFFF"]} style={{ flex: 1 }}>
+    <LinearGradient colors={["#70F3FA", "#ffffffff"]} style={{ flex: 1 }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -453,7 +453,8 @@ const createStyles = (width: number, height: number, insets: any) => {
 
 
     bottomSpacer: {
-      height: verticalScale(50),
+      height: verticalScale(2),
+      
     },
   });
 };
