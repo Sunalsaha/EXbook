@@ -1,33 +1,26 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image, useWindowDimensions } from 'react-native';
-import { Svg, Path } from 'react-native-svg';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  ScrollView, 
+  StyleSheet, 
+  Image, 
+  useWindowDimensions,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+  TouchableWithoutFeedback
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
-
-
-
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
-
-
-
-
-// Custom ChevronLeft component for React Native
-const ChevronLeft = () => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <Path d="M15 18l-6-6 6-6" stroke="#1f2937" />
-  </Svg>
-);
-
-
-
 
 const SellBook1: React.FC = () => {
   const { width, height } = useWindowDimensions();
   const styles = useMemo(() => makeStyles(width, height), [width, height]);
-
-
-
 
   const [formData, setFormData] = useState({
     bookName: '',
@@ -43,14 +36,8 @@ const SellBook1: React.FC = () => {
     other: ''
   });
 
-
-
-
   // Track which dropdowns are open
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-
-
-
 
   // Dropdown options
   const categories = [
@@ -61,9 +48,6 @@ const SellBook1: React.FC = () => {
     { label: 'Others', value: 'others' },
   ];
 
-
-
-
   const classes = [
     ...Array.from({ length: 12 }, (_, i) => ({
       label: `Class ${i + 1}`,
@@ -71,9 +55,6 @@ const SellBook1: React.FC = () => {
     })),
     { label: 'Others', value: 'others' },
   ];
-
-
-
 
   const subjects = [
     { label: 'Mathematics', value: 'mathematics' },
@@ -87,21 +68,14 @@ const SellBook1: React.FC = () => {
     { label: 'Others', value: 'others' },
   ];
 
-
-
-
   const handleInputChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-
-
 
   // Check if "Others" option is selected for any dropdown
   const showOtherBox = formData.category === 'others' || 
                         formData.bookClass === 'others' || 
                         formData.subject === 'others';
-
-
 
   // Form validation - check if all required fields are filled
   const isFormValid = useMemo(() => {
@@ -114,16 +88,13 @@ const SellBook1: React.FC = () => {
       formData.publisherName.trim() !== '' &&
       formData.edition.trim() !== '';
 
-
     // Check if "Others" fields are filled when needed
     const isCategoryOtherValid = formData.category !== 'others' || formData.categoryOther.trim() !== '';
     const isClassOtherValid = formData.bookClass !== 'others' || formData.classOther.trim() !== '';
     const isSubjectOtherValid = formData.subject !== 'others' || formData.subjectOther.trim() !== '';
 
-
     // Check if "Other" box is filled when any "Others" option is selected
     const isOtherBoxValid = !showOtherBox || formData.other.trim() !== '';
-
 
     return isBasicFieldsFilled && 
            isCategoryOtherValid && 
@@ -132,9 +103,6 @@ const SellBook1: React.FC = () => {
            isOtherBoxValid;
   }, [formData, showOtherBox]);
 
-
-
-
   const handleNext = () => {
     if (isFormValid) {
       console.log('Form data:', formData);
@@ -142,8 +110,8 @@ const SellBook1: React.FC = () => {
     }
   };
 
-
-
+  // Calculate keyboard offset based on platform and navigation bar
+  const keyboardVerticalOffset = Platform.OS === 'ios' ? 0 : 0;
 
   return (
     <LinearGradient
@@ -152,200 +120,175 @@ const SellBook1: React.FC = () => {
       end={{ x: 1, y: 1 }}
       style={styles.container}
     >
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+        keyboardVerticalOffset={keyboardVerticalOffset}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton}>
-            <ChevronLeft />
-            <Text style={styles.headerTitle}>Shear Books</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
+            {/* Header */}
+            <View style={styles.header}>
+              <TouchableOpacity style={styles.backButton}>
+                <Ionicons name="chevron-back" size={24} color="#1f2937" />
+                <Text style={styles.headerTitle}>Shear Books</Text>
+              </TouchableOpacity>
+            </View>
 
+            {/* Hero Image Card */}
+            <View style={styles.heroCard}>
+              <Image
+                source={require('../../assets/images/donate-book.png')}
+                style={styles.heroImage}
+                resizeMode="cover"
+              />
+            </View>
 
+            {/* Form Section */}
+            <View style={styles.formCard}>
+              <Text style={styles.formTitle}>A. Basic Details</Text>
+              
+              {/* Book Name */}
+              <InputField
+                styles={styles}
+                label="Book Title"
+                placeholder="Book Name and Full Description"
+                value={formData.bookName}
+                onChangeText={(value) => handleInputChange('bookName', value)}
+              />
 
+              {/* Category */}
+              <DropdownField
+                styles={styles}
+                label="Category"
+                placeholder="Select Book Category"
+                value={formData.category}
+                options={categories}
+                onSelect={(value) => handleInputChange('category', value)}
+                isOpen={openDropdown === 'category'}
+                onToggle={(open) => setOpenDropdown(open ? 'category' : null)}
+              />
+              {formData.category === 'others' && (
+                <InputField
+                  styles={styles}
+                  label="Specify Category"
+                  placeholder="Enter category"
+                  value={formData.categoryOther}
+                  onChangeText={(value) => handleInputChange('categoryOther', value)}
+                />
+              )}
 
-        {/* Hero Image Card */}
-        <View style={styles.heroCard}>
-          <Image
-            source={require('../../assets/images/donate-book.png')}
-            style={styles.heroImage}
-            resizeMode="cover"
-          />
-        </View>
+              {/* Book Class */}
+              <DropdownField
+                styles={styles}
+                label="Class"
+                placeholder="Select Book Class"
+                value={formData.bookClass}
+                options={classes}
+                onSelect={(value) => handleInputChange('bookClass', value)}
+                isOpen={openDropdown === 'class'}
+                onToggle={(open) => setOpenDropdown(open ? 'class' : null)}
+              />
+              {formData.bookClass === 'others' && (
+                <InputField
+                  styles={styles}
+                  label="Specify Class"
+                  placeholder="Enter class"
+                  value={formData.classOther}
+                  onChangeText={(value) => handleInputChange('classOther', value)}
+                />
+              )}
 
+              {/* Subject */}
+              <DropdownField
+                styles={styles}
+                label="Subject"
+                placeholder="Select Subject"
+                value={formData.subject}
+                options={subjects}
+                onSelect={(value) => handleInputChange('subject', value)}
+                isOpen={openDropdown === 'subject'}
+                onToggle={(open) => setOpenDropdown(open ? 'subject' : null)}
+              />
+              {formData.subject === 'others' && (
+                <InputField
+                  styles={styles}
+                  label="Specify Subject"
+                  placeholder="Enter subject"
+                  value={formData.subjectOther}
+                  onChangeText={(value) => handleInputChange('subjectOther', value)}
+                />
+              )}
 
+              {/* Author Name */}
+              <InputField
+                styles={styles}
+                label="Author Name"
+                placeholder="Author Name"
+                value={formData.authorName}
+                onChangeText={(value) => handleInputChange('authorName', value)}
+              />
 
+              {/* Publisher Name */}
+              <InputField
+                styles={styles}
+                label="Publisher Name"
+                placeholder="Publisher Name"
+                value={formData.publisherName}
+                onChangeText={(value) => handleInputChange('publisherName', value)}
+              />
 
-        {/* Form Section */}
-        <View style={styles.formCard}>
-          <Text style={styles.formTitle}>A. Basic Details</Text>
-          
-          {/* Book Name */}
-          <InputField
-            styles={styles}
-            label="Book Title"
-            placeholder="Book Name and Full Description"
-            value={formData.bookName}
-            onChangeText={(value) => handleInputChange('bookName', value)}
-          />
+              {/* Edition */}
+              <InputField
+                styles={styles}
+                label="Edition"
+                placeholder="Edition (e.g. 2021, 3rd Edition)"
+                value={formData.edition}
+                onChangeText={(value) => handleInputChange('edition', value)}
+              />
 
+              {/* Note Box */}
+              <View style={styles.noteBox}>
+                <Text style={styles.noteText}>
+                  <Text style={styles.noteBold}>Note:</Text> Use 'Others' when the category, class, or subject is missing
+                </Text>
+              </View>
 
+              {/* Other Text Input - Styled like Author Name input with floating label */}
+              {showOtherBox && (
+                <InputField
+                  styles={styles}
+                  label="Other"
+                  placeholder="Category: Example, Class: 10, Subject: Xyz"
+                  value={formData.other}
+                  onChangeText={(value) => handleInputChange('other', value)}
+                  multiline
+                />
+              )}
+            </View>
 
-
-          {/* Category */}
-          <DropdownField
-            styles={styles}
-            label="Category"
-            placeholder="Select Book Category"
-            value={formData.category}
-            options={categories}
-            onSelect={(value) => handleInputChange('category', value)}
-            isOpen={openDropdown === 'category'}
-            onToggle={(open) => setOpenDropdown(open ? 'category' : null)}
-          />
-          {formData.category === 'others' && (
-            <InputField
-              styles={styles}
-              label="Specify Category"
-              placeholder="Enter category"
-              value={formData.categoryOther}
-              onChangeText={(value) => handleInputChange('categoryOther', value)}
-            />
-          )}
-
-
-
-
-          {/* Book Class */}
-          <DropdownField
-            styles={styles}
-            label="Class"
-            placeholder="Select Book Class"
-            value={formData.bookClass}
-            options={classes}
-            onSelect={(value) => handleInputChange('bookClass', value)}
-            isOpen={openDropdown === 'class'}
-            onToggle={(open) => setOpenDropdown(open ? 'class' : null)}
-          />
-          {formData.bookClass === 'others' && (
-            <InputField
-              styles={styles}
-              label="Specify Class"
-              placeholder="Enter class"
-              value={formData.classOther}
-              onChangeText={(value) => handleInputChange('classOther', value)}
-            />
-          )}
-
-
-
-
-          {/* Subject */}
-          <DropdownField
-            styles={styles}
-            label="Subject"
-            placeholder="Select Subject"
-            value={formData.subject}
-            options={subjects}
-            onSelect={(value) => handleInputChange('subject', value)}
-            isOpen={openDropdown === 'subject'}
-            onToggle={(open) => setOpenDropdown(open ? 'subject' : null)}
-          />
-          {formData.subject === 'others' && (
-            <InputField
-              styles={styles}
-              label="Specify Subject"
-              placeholder="Enter subject"
-              value={formData.subjectOther}
-              onChangeText={(value) => handleInputChange('subjectOther', value)}
-            />
-          )}
-
-
-
-
-          {/* Author Name */}
-          <InputField
-            styles={styles}
-            label="Author Name"
-            placeholder="Author Name"
-            value={formData.authorName}
-            onChangeText={(value) => handleInputChange('authorName', value)}
-          />
-
-
-
-
-          {/* Publisher Name */}
-          <InputField
-            styles={styles}
-            label="Publisher Name"
-            placeholder="Publisher Name"
-            value={formData.publisherName}
-            onChangeText={(value) => handleInputChange('publisherName', value)}
-          />
-
-
-
-
-          {/* Edition */}
-          <InputField
-            styles={styles}
-            label="Edition"
-            placeholder="Edition (e.g. 2021, 3rd Edition)"
-            value={formData.edition}
-            onChangeText={(value) => handleInputChange('edition', value)}
-          />
-
-
-
-
-          {/* Note Box */}
-          <View style={styles.noteBox}>
-            <Text style={styles.noteText}>
-              <Text style={styles.noteBold}>Note:</Text> Use 'Others' when the category, class, or subject is missing
-            </Text>
-          </View>
-
-
-
-          {/* Other Text Input - Styled like Author Name input with floating label */}
-          {showOtherBox && (
-            <InputField
-              styles={styles}
-              label="Other"
-              placeholder="Category: Example, Class: 10, Subject: Xyz"
-              value={formData.other}
-              onChangeText={(value) => handleInputChange('other', value)}
-              multiline
-            />
-          )}
-        </View>
-
-
-
-
-        {/* Next Button - Enabled only when form is valid */}
-        <TouchableOpacity 
-          style={[styles.nextButton, !isFormValid && styles.nextButtonDisabled]} 
-          onPress={handleNext}
-          disabled={!isFormValid}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.nextButtonText, !isFormValid && styles.nextButtonTextDisabled]}>
-            Next
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+            {/* Next Button - Enabled only when form is valid */}
+            <TouchableOpacity 
+              style={[styles.nextButton, !isFormValid && styles.nextButtonDisabled]} 
+              onPress={handleNext}
+              disabled={!isFormValid}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.nextButtonText, !isFormValid && styles.nextButtonTextDisabled]}>
+                Next
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </LinearGradient>
   );
 };
-
-
-
 
 // Reusable Input Field Component
 const InputField = ({
@@ -391,9 +334,6 @@ const InputField = ({
   );
 };
 
-
-
-
 // Reusable Dropdown Field Component with inline dropdown
 const DropdownField = ({
   styles,
@@ -417,9 +357,6 @@ const DropdownField = ({
   const isFilled = value.length > 0;
   const selectedLabel = options.find(opt => opt.value === value)?.label || placeholder;
 
-
-
-
   return (
     <View style={styles.fieldWrap}>
       <View style={[styles.floatingLabel, isFilled && styles.floatingLabelFilled]}>
@@ -440,9 +377,6 @@ const DropdownField = ({
           color="#374151" 
         />
       </TouchableOpacity>
-
-
-
 
       {/* Inline Dropdown List */}
       {isOpen && (
@@ -483,9 +417,6 @@ const DropdownField = ({
   );
 };
 
-
-
-
 const makeStyles = (width: number, height: number) => {
   // Responsive scaling function based on screen width
   const s = (n: number) => (width / 375) * n;
@@ -494,18 +425,20 @@ const makeStyles = (width: number, height: number) => {
   const topPad = clamp(s(45), 24, 60);
   const sidePad = clamp(s(16), 12, 24);
 
-
-
-
   return StyleSheet.create({
     container: { 
       flex: 1 
+    },
+    
+    keyboardAvoidingView: {
+      flex: 1,
     },
     
     scrollContent: {
       paddingHorizontal: sidePad,
       paddingTop: topPad,
       paddingBottom: clamp(s(30), 20, 50),
+      flexGrow: 1,
     },
     
     header: { 
@@ -730,8 +663,5 @@ const makeStyles = (width: number, height: number) => {
     },
   });
 };
-
-
-
 
 export default SellBook1;

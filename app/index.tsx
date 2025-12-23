@@ -3,7 +3,7 @@ import React from "react";
 
 export default function index() {
   return (
-     //<Redirect href="/(auth)/Login"/>
+     <Redirect href="/(auth)/Login"/>
       //<Redirect href="/(screen)/CredencialForm"/>
      //<Redirect href="/(screen)/Dashboard" />
    // <Redirect href="/(screen)/Profile" />
@@ -14,7 +14,7 @@ export default function index() {
       //<Redirect href="/(screen)/Disclosure" />
       //<Redirect href="/(screen)/Sellbook1" />
       //<Redirect href="/(screen)/Sellbook2" />
-      <Redirect href="/(screen)/Sellbook3" />
+      //<Redirect href="/(screen)/Sellbook3" />
       //<Redirect href="/(screen)/Preview" />
       //<Redirect href="/(screen)/Support" />
       //<Redirect href="/(screen)/OrdersScreen" />

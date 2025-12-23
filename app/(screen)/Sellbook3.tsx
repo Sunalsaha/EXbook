@@ -8,62 +8,17 @@ import {
   Image,
   useWindowDimensions,
   Alert,
+  Platform,
+  KeyboardAvoidingView,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
-import { Svg, Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
 const clamp = (n: number, min: number, max: number) =>
   Math.max(min, Math.min(max, n));
-
-const ChevronLeft = () => (
-  <Svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <Path d="M15 18l-6-6 6-6" stroke="#1f2937" />
-  </Svg>
-);
-
-const UploadIcon = () => (
-  <Svg
-    width="48"
-    height="48"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="#374151"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <Path d="M17 8l-5-5-5 5" />
-    <Path d="M12 3v12" />
-  </Svg>
-);
-
-const LocationIcon = () => (
-  <Svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="#000"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-    <Path d="M12 7 A3 3 0 0 1 12 13 A3 3 0 0 1 12 7" fill="#000" />
-  </Svg>
-);
 
 const SellBook3: React.FC = () => {
   const { width, height } = useWindowDimensions();
@@ -101,8 +56,7 @@ const SellBook3: React.FC = () => {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      // NEW API: use MediaType or string values
-      mediaTypes: ['images'], // or: mediaTypes: [ImagePicker.MediaType.IMAGES]
+      mediaTypes: ['images'],
       quality: 0.8,
       allowsEditing: false,
     });
@@ -133,8 +87,7 @@ const SellBook3: React.FC = () => {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      // Camera still only takes photos in your flow
-      mediaTypes: ['images'], // optional but explicit
+      mediaTypes: ['images'],
       quality: 0.8,
       allowsEditing: false,
     });
@@ -178,6 +131,8 @@ const SellBook3: React.FC = () => {
     }
   };
 
+  const keyboardVerticalOffset = Platform.OS === 'ios' ? 0 : 0;
+
   return (
     <LinearGradient
       colors={['#67E8F9', '#E0E7FF']}
@@ -185,173 +140,200 @@ const SellBook3: React.FC = () => {
       end={{ x: 1, y: 1 }}
       style={styles.container}
     >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+        keyboardVerticalOffset={keyboardVerticalOffset}
       >
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton}>
-            <ChevronLeft />
-            <Text style={styles.headerTitle}>Shear Books</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.heroCard}>
-          <Image
-            source={require('../../assets/images/donate-book.png')}
-            style={styles.heroImage}
-            resizeMode="cover"
-          />
-        </View>
-
-        <View style={styles.formCard}>
-          <Text style={styles.formTitle}>D. Upload Photos</Text>
-
-          <Text style={styles.noteText}>
-            <Text style={styles.noteBold}>Note:</Text> Please upload photos of
-            the front cover, back cover, and index page. If there are any torn
-            or damaged pages, upload clear photos of the defects.
-          </Text>
-
-          {photos.length > 0 && (
-            <View style={styles.photoGrid}>
-              {photos.map((photo, index) => (
-                <View key={index} style={styles.photoContainer}>
-                  <Image
-                    source={{ uri: photo }}
-                    style={styles.photoThumbnail}
-                  />
-                  <TouchableOpacity
-                    style={styles.removePhotoButton}
-                    onPress={() => removePhoto(index)}
-                  >
-                    <Ionicons
-                      name="close-circle"
-                      size={24}
-                      color="#EF4444"
-                    />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          )}
-
-          <TouchableOpacity
-            style={styles.uploadArea}
-            onPress={handleUploadPress}
-            activeOpacity={0.7}
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
           >
-            <UploadIcon />
-            <Text style={styles.uploadText}>
-              Choose a file or take a picture
-            </Text>
-            <Text style={styles.uploadSubtext}>
-              JPG, PNG, PDF, and MP4 formats, up to 50MB
-            </Text>
-            <TouchableOpacity
-              style={styles.browseButton}
-              onPress={handleUploadPress}
-            >
-              <Text style={styles.browseButtonText}>Browse File</Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
+            <View style={styles.header}>
+              <TouchableOpacity style={styles.backButton}>
+                <Ionicons name="chevron-back" size={24} color="#1f2937" />
+                <Text style={styles.headerTitle}>Shear Books</Text>
+              </TouchableOpacity>
+            </View>
 
-          <Text style={styles.photoCounter}>
-            {photos.length} / 3 photos uploaded (minimum 3 required)
-          </Text>
-        </View>
+            <View style={styles.heroCard}>
+              <Image
+                source={require('../../assets/images/donate-book.png')}
+                style={styles.heroImage}
+                resizeMode="cover"
+              />
+            </View>
 
-        <View style={styles.locationCard}>
-          <View style={styles.locationContent}>
-            <Text style={styles.formTitle}>E. Pickup Location</Text>
+            <View style={styles.formCard}>
+              <Text style={styles.formTitle}>D. Upload Photos</Text>
 
-            <View style={styles.locationDisplayBox}>
-              <View style={styles.locationIconWrapper}>
-                <LocationIcon />
-              </View>
-              <Text style={styles.locationText} numberOfLines={3}>
-                {location}
+              <Text style={styles.noteText}>
+                <Text style={styles.noteBold}>Note:</Text> Please upload photos of
+                the front cover, back cover, and index page. If there are any torn
+                or damaged pages, upload clear photos of the defects.
+              </Text>
+
+              {photos.length > 0 && (
+                <View style={styles.photoGrid}>
+                  {photos.map((photo, index) => (
+                    <View key={index} style={styles.photoContainer}>
+                      <Image
+                        source={{ uri: photo }}
+                        style={styles.photoThumbnail}
+                      />
+                      <TouchableOpacity
+                        style={styles.removePhotoButton}
+                        onPress={() => removePhoto(index)}
+                      >
+                        <Ionicons
+                          name="close-circle"
+                          size={24}
+                          color="#EF4444"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={styles.uploadArea}
+                onPress={handleUploadPress}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="cloud-upload-outline" size={48} color="#374151" />
+                <Text style={styles.uploadText}>
+                  Choose a file or take a picture
+                </Text>
+                <Text style={styles.uploadSubtext}>
+                  JPG, PNG, PDF, and MP4 formats, up to 50MB
+                </Text>
+                <TouchableOpacity
+                  style={styles.browseButton}
+                  onPress={handleUploadPress}
+                >
+                  <Text style={styles.browseButtonText}>Browse File</Text>
+                </TouchableOpacity>
+              </TouchableOpacity>
+
+              <Text style={styles.photoCounter}>
+                {photos.length} / 3 photos uploaded (minimum 3 required)
               </Text>
             </View>
-          </View>
 
-          <View style={styles.dividerLine} />
+            <View style={styles.locationCard}>
+              <View style={styles.locationContent}>
+                <Text style={styles.formTitle}>E. Pickup Location</Text>
 
-          {!isLocationSaved ? (
-            <View style={styles.locationButtons}>
-              <TouchableOpacity
-                style={styles.changeLocationButton}
-                onPress={handleChangeLocation}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.changeLocationText}>Change Location</Text>
-              </TouchableOpacity>
+                <View style={styles.locationDisplayBox}>
+                  <View style={styles.locationIconWrapper}>
+                    <Ionicons name="location" size={24} color="#000" />
+                  </View>
+                  <Text style={styles.locationText} numberOfLines={3}>
+                    {location}
+                  </Text>
+                </View>
+              </View>
 
-              <View style={styles.verticalDivider} />
+              <View style={styles.dividerLine} />
 
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={handleLocationSave}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.saveButtonText}>Save</Text>
-              </TouchableOpacity>
+              {!isLocationSaved ? (
+                <View style={styles.locationButtons}>
+                  <TouchableOpacity
+                    style={styles.changeLocationButton}
+                    onPress={handleChangeLocation}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.changeLocationText}>Change Location</Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.verticalDivider} />
+
+                  <TouchableOpacity
+                    style={styles.saveButton}
+                    onPress={handleLocationSave}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.saveButtonText}>Save</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.savedButton}
+                  onPress={handleChangeLocation}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.savedButtonText}>Saved</Text>
+                </TouchableOpacity>
+              )}
             </View>
-          ) : (
+
             <TouchableOpacity
-              style={styles.savedButton}
-              onPress={handleChangeLocation}
+              style={[styles.nextButton, !isFormValid && styles.nextButtonDisabled]}
+              onPress={handleNext}
+              disabled={!isFormValid}
               activeOpacity={0.8}
             >
-              <Text style={styles.savedButtonText}>Saved</Text>
+              <Text
+                style={[
+                  styles.nextButtonText,
+                  !isFormValid && styles.nextButtonTextDisabled,
+                ]}
+              >
+                Next
+              </Text>
             </TouchableOpacity>
-          )}
-        </View>
-
-        <TouchableOpacity
-          style={[styles.nextButton, !isFormValid && styles.nextButtonDisabled]}
-          onPress={handleNext}
-          disabled={!isFormValid}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={[
-              styles.nextButtonText,
-              !isFormValid && styles.nextButtonTextDisabled,
-            ]}
-          >
-            Next
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </LinearGradient>
   );
 };
 
 const makeStyles = (width: number, height: number) => {
   const s = (n: number) => (width / 375) * n;
-  const topPad = clamp(s(45), 24, 60);
-  const sidePad = clamp(s(16), 12, 24);
+  
+  // Responsive breakpoints
+  const isSmallScreen = width < 360;
+  const isMediumScreen = width >= 360 && width < 414;
+  const isLargeScreen = width >= 414;
+  
+  // Dynamic spacing based on screen size
+  const topPad = isSmallScreen ? 20 : isMediumScreen ? clamp(s(45), 24, 60) : 60;
+  const sidePad = isSmallScreen ? 12 : isMediumScreen ? clamp(s(16), 12, 24) : 24;
 
   return StyleSheet.create({
     container: { flex: 1 },
+    
+    keyboardView: {
+      flex: 1,
+    },
+    
     scrollContent: {
       paddingHorizontal: sidePad,
       paddingTop: topPad,
       paddingBottom: clamp(s(30), 20, 50),
+      flexGrow: 1,
     },
+    
     header: { marginBottom: clamp(s(16), 12, 24) },
+    
     backButton: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: clamp(s(8), 6, 10),
     },
+    
     headerTitle: {
       fontSize: clamp(s(18), 16, 22),
       fontWeight: '800',
       color: '#000',
       marginLeft: clamp(s(6), 4, 10),
     },
+    
     heroCard: {
       height: clamp(s(180), 140, 240),
       borderRadius: clamp(s(16), 12, 20),
@@ -364,56 +346,67 @@ const makeStyles = (width: number, height: number) => {
       shadowOpacity: 0.1,
       shadowRadius: 8,
     },
+    
     heroImage: {
       width: '100%',
       height: '100%',
     },
+    
     formCard: {
       backgroundColor: 'rgba(165, 243, 252, 0.6)',
       borderRadius: clamp(s(16), 12, 20),
       padding: clamp(s(20), 16, 28),
       marginBottom: clamp(s(16), 12, 24),
     },
+    
     locationCard: {
       backgroundColor: 'rgba(165, 243, 252, 0.6)',
       borderRadius: clamp(s(16), 12, 20),
       marginBottom: clamp(s(16), 12, 24),
       overflow: 'hidden',
     },
+    
     locationContent: {
       padding: clamp(s(20), 16, 28),
       paddingBottom: clamp(s(10), 8, 12),
     },
+    
     formTitle: {
       fontSize: clamp(s(18), 16, 22),
       fontWeight: '700',
       color: '#1f2937',
       marginBottom: clamp(s(12), 10, 16),
     },
+    
     noteText: {
       fontSize: clamp(s(11), 10, 13),
       color: '#4b5563',
       lineHeight: clamp(s(16), 14, 18),
       marginBottom: clamp(s(16), 14, 20),
     },
+    
     noteBold: { fontWeight: '700' },
+    
     photoGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
       gap: clamp(s(10), 8, 12),
       marginBottom: clamp(s(16), 14, 20),
     },
+    
     photoContainer: {
       position: 'relative',
       width: clamp(s(100), 80, 120),
       height: clamp(s(100), 80, 120),
     },
+    
     photoThumbnail: {
       width: '100%',
       height: '100%',
       borderRadius: clamp(s(10), 8, 12),
       backgroundColor: '#f3f4f6',
     },
+    
     removePhotoButton: {
       position: 'absolute',
       top: -8,
@@ -421,6 +414,7 @@ const makeStyles = (width: number, height: number) => {
       backgroundColor: '#fff',
       borderRadius: 12,
     },
+    
     uploadArea: {
       borderWidth: 2,
       borderColor: '#44D6FF',
@@ -432,6 +426,7 @@ const makeStyles = (width: number, height: number) => {
       backgroundColor: 'rgba(255, 255, 255, 0.3)',
       marginBottom: clamp(s(12), 10, 16),
     },
+    
     uploadText: {
       fontSize: clamp(s(14), 13, 16),
       color: '#374151',
@@ -439,12 +434,14 @@ const makeStyles = (width: number, height: number) => {
       marginTop: clamp(s(12), 10, 14),
       marginBottom: clamp(s(4), 3, 6),
     },
+    
     uploadSubtext: {
       fontSize: clamp(s(11), 10, 13),
       color: '#6b7280',
       marginBottom: clamp(s(16), 14, 20),
       textAlign: 'center',
     },
+    
     browseButton: {
       backgroundColor: 'rgba(68, 214, 255, 0.5)',
       paddingHorizontal: clamp(s(20), 18, 24),
@@ -453,25 +450,30 @@ const makeStyles = (width: number, height: number) => {
       borderWidth: 1,
       borderColor: '#44D6FF',
     },
+    
     browseButtonText: {
       fontSize: clamp(s(13), 12, 15),
       color: '#1f2937',
       fontWeight: '600',
     },
+    
     photoCounter: {
       fontSize: clamp(s(12), 11, 14),
       color: '#374151',
       fontWeight: '600',
       textAlign: 'center',
     },
+    
     locationDisplayBox: {
       flexDirection: 'row',
       alignItems: 'flex-start',
     },
+    
     locationIconWrapper: {
       marginRight: clamp(s(10), 8, 12),
       marginTop: clamp(s(2), 1, 3),
     },
+    
     locationText: {
       flex: 1,
       fontSize: clamp(s(13), 12, 15),
@@ -479,44 +481,52 @@ const makeStyles = (width: number, height: number) => {
       lineHeight: clamp(s(18), 16, 20),
       fontWeight: '500',
     },
+    
     dividerLine: {
       height: 1,
       backgroundColor: 'rgba(0,0,0,0.1)',
       width: '100%',
     },
+    
     locationButtons: {
       flexDirection: 'row',
       alignItems: 'center',
       height: clamp(s(56), 50, 60),
       backgroundColor: 'rgba(255,255,255,0.4)',
     },
+    
     changeLocationButton: {
       flex: 1,
       height: '100%',
       alignItems: 'center',
       justifyContent: 'center',
     },
+    
     changeLocationText: {
       fontSize: clamp(s(14), 13, 16),
       color: '#003EF9',
       fontWeight: '600',
     },
+    
     verticalDivider: {
       width: 1,
       height: '60%',
       backgroundColor: '#9CA3AF',
     },
+    
     saveButton: {
       flex: 1,
       height: '100%',
       alignItems: 'center',
       justifyContent: 'center',
     },
+    
     saveButtonText: {
       fontSize: clamp(s(14), 13, 16),
       color: '#16A34A',
       fontWeight: '600',
     },
+    
     savedButton: {
       width: '100%',
       height: clamp(s(56), 50, 60),
@@ -524,11 +534,13 @@ const makeStyles = (width: number, height: number) => {
       justifyContent: 'center',
       backgroundColor: '#16A34A',
     },
+    
     savedButtonText: {
       fontSize: clamp(s(16), 15, 18),
       color: '#FFFFFF',
       fontWeight: '700',
     },
+    
     nextButton: {
       height: clamp(s(50), 46, 58),
       borderRadius: clamp(s(12), 10, 14),
@@ -538,22 +550,26 @@ const makeStyles = (width: number, height: number) => {
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: clamp(s(20), 16, 28),
+      marginTop: clamp(s(8), 6, 12),
       elevation: 2,
       shadowColor: '#000',
       shadowOpacity: 0.07,
       shadowRadius: 10,
       shadowOffset: { width: 0, height: 6 },
     },
+    
     nextButtonText: {
       fontSize: clamp(s(16), 15, 18),
       fontWeight: '700',
       color: 'rgba(255,255,255,0.78)',
     },
+    
     nextButtonDisabled: {
       backgroundColor: 'rgba(156, 163, 175, 0.5)',
       elevation: 0,
       shadowOpacity: 0,
     },
+    
     nextButtonTextDisabled: {
       color: 'rgba(107, 114, 128, 0.7)',
     },

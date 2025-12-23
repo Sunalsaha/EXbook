@@ -1,17 +1,22 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image, useWindowDimensions } from 'react-native';
-import { Svg, Path } from 'react-native-svg';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  ScrollView, 
+  StyleSheet, 
+  Image, 
+  useWindowDimensions,
+  Platform,
+  KeyboardAvoidingView,
+  Keyboard,
+  TouchableWithoutFeedback
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
-
-// Custom ChevronLeft component for React Native
-const ChevronLeft = () => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <Path d="M15 18l-6-6 6-6" stroke="#1f2937" />
-  </Svg>
-);
 
 const SellBook2: React.FC = () => {
   const { width, height } = useWindowDimensions();
@@ -73,6 +78,9 @@ const SellBook2: React.FC = () => {
     }
   };
 
+  // Calculate keyboard vertical offset based on device
+  const keyboardVerticalOffset = Platform.OS === 'ios' ? 0 : 0;
+
   return (
     <LinearGradient
       colors={["#67E8F9", "#E0E7FF"]}
@@ -80,110 +88,120 @@ const SellBook2: React.FC = () => {
       end={{ x: 1, y: 1 }}
       style={styles.container}
     >
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+        keyboardVerticalOffset={keyboardVerticalOffset}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton}>
-            <ChevronLeft />
-            <Text style={styles.headerTitle}>Shear Books</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Hero Image Card */}
-        <View style={styles.heroCard}>
-          <Image
-            source={require('../../assets/images/donate-book.png')}
-            style={styles.heroImage}
-            resizeMode="cover"
-          />
-        </View>
-
-        {/* Form Section */}
-        <View style={styles.formCard}>
-          <Text style={styles.formTitle}>B. Book Condition & Description</Text>
-          
-          {/* Book Condition */}
-          <DropdownField
-            styles={styles}
-            label="Book Condition"
-            placeholder="Select Book Condition"
-            value={formData.bookCondition}
-            options={bookConditions}
-            onSelect={(value) => handleInputChange('bookCondition', value)}
-            isOpen={openDropdown === 'bookCondition'}
-            onToggle={(open) => setOpenDropdown(open ? 'bookCondition' : null)}
-          />
-
-          {/* About the Book Condition */}
-          <InputField
-            styles={styles}
-            label="About the Book Condition"
-            placeholder="Any Writing/Marking Inside?"
-            value={formData.aboutCondition}
-            onChangeText={(value) => handleInputChange('aboutCondition', value)}
-            multiline
-          />
-
-          {/* Select Any Writing/Marking Inside? */}
-          <DropdownField
-            styles={styles}
-            label="Any Writing/Marking Inside?"
-            placeholder="Select Any Writing/Marking Inside?"
-            value={formData.writingMarking}
-            options={writingMarkingOptions}
-            onSelect={(value) => handleInputChange('writingMarking', value)}
-            isOpen={openDropdown === 'writingMarking'}
-            onToggle={(open) => setOpenDropdown(open ? 'writingMarking' : null)}
-          />
-
-          {/* Select Any Pages Missing or Torn? */}
-          <DropdownField
-            styles={styles}
-            label="Any Pages Missing or Torn?"
-            placeholder="Select Any Pages Missing or Torn?"
-            value={formData.pagesMissing}
-            options={pagesMissingOptions}
-            onSelect={(value) => handleInputChange('pagesMissing', value)}
-            isOpen={openDropdown === 'pagesMissing'}
-            onToggle={(open) => setOpenDropdown(open ? 'pagesMissing' : null)}
-          />
-        </View>
-
-        {/* Price Section */}
-        <View style={styles.priceCard}>
-          <Text style={styles.formTitle}>C. Price</Text>
-          
-          {/* Original MRP Printed */}
-          <View style={styles.priceFieldWrap}>
-            <View style={styles.priceCheckbox}>
-              <Text style={styles.rupeeSymbol}>₹</Text>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+          >
+            {/* Header */}
+            <View style={styles.header}>
+              <TouchableOpacity style={styles.backButton}>
+                <Ionicons name="chevron-back" size={24} color="#1f2937" />
+                <Text style={styles.headerTitle}>Shear Books</Text>
+              </TouchableOpacity>
             </View>
-            <InputField
-              styles={styles}
-              label="Price"
-              placeholder="Original MRP Printed"
-              value={formData.originalMRP}
-              onChangeText={(value) => handleInputChange('originalMRP', value)}
-              keyboardType="numeric"
-            />
-          </View>
-        </View>
 
-        {/* Next Button - Enabled only when form is valid */}
-        <TouchableOpacity 
-          style={[styles.nextButton, !isFormValid && styles.nextButtonDisabled]} 
-          onPress={handleNext}
-          disabled={!isFormValid}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.nextButtonText, !isFormValid && styles.nextButtonTextDisabled]}>
-            Next
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+            {/* Hero Image Card */}
+            <View style={styles.heroCard}>
+              <Image
+                source={require('../../assets/images/donate-book.png')}
+                style={styles.heroImage}
+                resizeMode="cover"
+              />
+            </View>
+
+            {/* Form Section */}
+            <View style={styles.formCard}>
+              <Text style={styles.formTitle}>B. Book Condition & Description</Text>
+              
+              {/* Book Condition */}
+              <DropdownField
+                styles={styles}
+                label="Book Condition"
+                placeholder="Select Book Condition"
+                value={formData.bookCondition}
+                options={bookConditions}
+                onSelect={(value) => handleInputChange('bookCondition', value)}
+                isOpen={openDropdown === 'bookCondition'}
+                onToggle={(open) => setOpenDropdown(open ? 'bookCondition' : null)}
+              />
+
+              {/* About the Book Condition */}
+              <InputField
+                styles={styles}
+                label="About the Book Condition"
+                placeholder="Any Writing/Marking Inside?"
+                value={formData.aboutCondition}
+                onChangeText={(value) => handleInputChange('aboutCondition', value)}
+                multiline
+              />
+
+              {/* Select Any Writing/Marking Inside? */}
+              <DropdownField
+                styles={styles}
+                label="Any Writing/Marking Inside?"
+                placeholder="Select Any Writing/Marking Inside?"
+                value={formData.writingMarking}
+                options={writingMarkingOptions}
+                onSelect={(value) => handleInputChange('writingMarking', value)}
+                isOpen={openDropdown === 'writingMarking'}
+                onToggle={(open) => setOpenDropdown(open ? 'writingMarking' : null)}
+              />
+
+              {/* Select Any Pages Missing or Torn? */}
+              <DropdownField
+                styles={styles}
+                label="Any Pages Missing or Torn?"
+                placeholder="Select Any Pages Missing or Torn?"
+                value={formData.pagesMissing}
+                options={pagesMissingOptions}
+                onSelect={(value) => handleInputChange('pagesMissing', value)}
+                isOpen={openDropdown === 'pagesMissing'}
+                onToggle={(open) => setOpenDropdown(open ? 'pagesMissing' : null)}
+              />
+            </View>
+
+            {/* Price Section */}
+            <View style={styles.priceCard}>
+              <Text style={styles.formTitle}>C. Price</Text>
+              
+              {/* Original MRP Printed */}
+              <View style={styles.priceFieldWrap}>
+                <View style={styles.priceCheckbox}>
+                  <Text style={styles.rupeeSymbol}>₹</Text>
+                </View>
+                <InputField
+                  styles={styles}
+                  label="Price"
+                  placeholder="Original MRP Printed"
+                  value={formData.originalMRP}
+                  onChangeText={(value) => handleInputChange('originalMRP', value)}
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+
+            {/* Next Button - Enabled only when form is valid */}
+            <TouchableOpacity 
+              style={[styles.nextButton, !isFormValid && styles.nextButtonDisabled]} 
+              onPress={handleNext}
+              disabled={!isFormValid}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.nextButtonText, !isFormValid && styles.nextButtonTextDisabled]}>
+                Next
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </LinearGradient>
   );
 };
@@ -227,6 +245,7 @@ const InputField = ({
         multiline={multiline}
         numberOfLines={multiline ? 4 : 1}
         textAlignVertical={multiline ? "top" : "center"}
+        blurOnSubmit={!multiline}
       />
     </View>
   );
@@ -316,22 +335,32 @@ const DropdownField = ({
 };
 
 const makeStyles = (width: number, height: number) => {
-  // Responsive scaling function based on screen width
+  // Enhanced responsive scaling function based on screen width
   const s = (n: number) => (width / 375) * n;
   
-  // Calculate padding and spacing based on screen size
-  const topPad = clamp(s(45), 24, 60);
-  const sidePad = clamp(s(16), 12, 24);
+  // Responsive breakpoints
+  const isSmallScreen = width < 360;
+  const isMediumScreen = width >= 360 && width < 414;
+  const isLargeScreen = width >= 414;
+  
+  // Dynamic spacing based on screen size
+  const topPad = isSmallScreen ? 20 : isMediumScreen ? clamp(s(45), 24, 60) : 60;
+  const sidePad = isSmallScreen ? 12 : isMediumScreen ? clamp(s(16), 12, 24) : 24;
 
   return StyleSheet.create({
     container: { 
       flex: 1 
     },
     
+    keyboardView: {
+      flex: 1,
+    },
+    
     scrollContent: {
       paddingHorizontal: sidePad,
       paddingTop: topPad,
       paddingBottom: clamp(s(30), 20, 50),
+      flexGrow: 1,
     },
     
     header: { 
@@ -491,6 +520,7 @@ const makeStyles = (width: number, height: number) => {
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: clamp(s(20), 16, 28),
+      marginTop: clamp(s(8), 6, 12),
       elevation: 2,
       shadowColor: '#000',
       shadowOpacity: 0.07,
