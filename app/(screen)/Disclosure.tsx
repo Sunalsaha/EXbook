@@ -12,12 +12,14 @@ import {
   useWindowDimensions,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { router, useLocalSearchParams } from "expo-router";
 
 // Import your GIF
-import loadingGif from "../../assets/images/loading.gif";
+const loadingGif = require("../../assets/images/loading.gif");
 
 interface Book {
   id: number;
@@ -76,6 +78,7 @@ const books: Book[] = [
 const Disclosure = () => {
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
   const IMAGE_HEIGHT = SCREEN_HEIGHT * 0.35;
+  const params = useLocalSearchParams();
 
   const [location] = useState<string>(
     "Action Area I, 1/2, Newtown, New Town, Cha..."
@@ -101,20 +104,10 @@ const Disclosure = () => {
   };
 
   const renderImageItem = ({ item }: { item: string }) => (
-    <View
-      style={{
-        height: IMAGE_HEIGHT,
-        width: SCREEN_WIDTH,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#fff",
-        paddingVertical: SCREEN_HEIGHT * 0.024,
-        borderRadius: 15,
-      }}
-    >
+    <View style={[styles.imageContainer, { height: IMAGE_HEIGHT, width: SCREEN_WIDTH }]}>
       <Image
         source={{ uri: item }}
-        style={{ width: "65%", height: "100%", borderRadius: 4 }}
+        style={styles.productImage}
         resizeMode="contain"
       />
     </View>
@@ -128,126 +121,51 @@ const Disclosure = () => {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#d4f1f4" }}>
-      <StatusBar barStyle="dark-content" backgroundColor="#2ee0f4ff" />
-      <SafeAreaView style={{ flex: 1 }}>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#d4f1f4" />
+      <SafeAreaView style={styles.safeArea}>
         {/* Header */}
-        <View
-          style={{
-            paddingHorizontal: SCREEN_WIDTH * 0.04,
-            paddingVertical: SCREEN_HEIGHT * 0.015,
-            paddingTop: SCREEN_HEIGHT * 0.05,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: SCREEN_WIDTH * 0.05,
-            backgroundColor: "#d4f1f4",
-          }}
-        >
-          <TouchableOpacity style={{ padding: 4 }}>
+        <View style={[styles.header, { paddingHorizontal: SCREEN_WIDTH * 0.04 }]}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
 
-          <View
-            style={{
-              flex: 1,
-              height: 44,
-              borderRadius: 8,
-              backgroundColor: "#fff",
-              flexDirection: "row",
-              alignItems: "center",
-              paddingHorizontal: 14,
-              borderWidth: 1,
-              borderColor: "#e0e0e0",
-            }}
-          >
+          <View style={styles.searchBar}>
             <Ionicons name="search-outline" size={20} color="#666" />
             <TextInput
-              style={{
-                flex: 1,
-                marginLeft: 10,
-                fontSize: 15,
-                color: "#000",
-                fontWeight: "400",
-              }}
+              style={styles.searchInput}
               placeholder="books near me"
               defaultValue="books near me"
               placeholderTextColor="#999"
             />
           </View>
 
-          <TouchableOpacity
-            style={{
-              width: 44,
-              height: 44,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "#fff",
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: "#e0e0e0",
-            }}
-          >
+          <TouchableOpacity style={styles.sellButton}>
             <Image
               source={require("../../assets/images/Sellbook.png")}
-              style={{ width: 24, height: 24 }}
+              style={styles.sellIcon}
               resizeMode="contain"
             />
           </TouchableOpacity>
         </View>
 
         <ScrollView
-          style={{ flex: 1 }}
+          style={styles.scrollView}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 20 }}
+          contentContainerStyle={styles.scrollContent}
         >
           {/* Main Product Card */}
           <View>
             {/* Image Carousel Section */}
-            <View style={{ position: "relative" }}>
-              {/* 2.5 km Badge - Bottom Left */}
-              <View
-                style={{
-                  position: "absolute",
-                  bottom: 12,
-                  left: 16,
-                  backgroundColor: "#ff6b6b",
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
-                  borderRadius: 12,
-                  zIndex: 10,
-                }}
-              >
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontSize: 11,
-                    fontWeight: "700",
-                  }}
-                >
-                  2.5 km
-                </Text>
+            <View style={styles.carouselContainer}>
+              {/* Distance Badge */}
+              <View style={styles.distanceBadge}>
+                <Text style={styles.distanceBadgeText}>2.5 km</Text>
               </View>
 
-              {/* Image Counter - Top Right */}
-              <View
-                style={{
-                  position: "absolute",
-                  top: 12,
-                  right: 16,
-                  backgroundColor: "rgba(0,0,0,0.6)",
-                  paddingHorizontal: 10,
-                  paddingVertical: 5,
-                  borderRadius: 12,
-                  zIndex: 10,
-                }}
-              >
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontSize: 12,
-                    fontWeight: "600",
-                  }}
-                >
+              {/* Image Counter */}
+              <View style={styles.imageCounter}>
+                <Text style={styles.imageCounterText}>
                   {currentImageIndex + 1}/{productImages.length}
                 </Text>
               </View>
@@ -258,8 +176,8 @@ const Disclosure = () => {
                 data={productImages}
                 renderItem={renderImageItem}
                 keyExtractor={(item, index) => `image-${index}`}
-                horizontal={true}
-                pagingEnabled={true}
+                horizontal
+                pagingEnabled
                 showsHorizontalScrollIndicator={false}
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
@@ -270,89 +188,24 @@ const Disclosure = () => {
             </View>
 
             {/* Product Details Section */}
-            <View style={{ paddingHorizontal: SCREEN_WIDTH * 0.04, paddingTop: 12 }}>
+            <View style={[styles.productDetails, { paddingHorizontal: SCREEN_WIDTH * 0.04 }]}>
               {/* Title */}
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "600",
-                  color: "#000",
-                  lineHeight: 22,
-                  marginBottom: 8,
-                }}
-              >
-                NCERT Mathematics Textbook for Class XI Edition 2024 (English
-                Medium)
-                {" "}
-                <Text style={{ color: "#0066ff", fontWeight: "400" }}>
-                  ......more
-                </Text>
+              <Text style={styles.productTitle}>
+                NCERT Mathematics Textbook for Class XI Edition 2024 (English Medium){" "}
+                <Text style={styles.moreText}>......more</Text>
               </Text>
 
               {/* "At Lowest Price" Badge */}
-              <View
-                style={{
-                  alignSelf: "flex-start",
-                  backgroundColor: "#0066ff",
-                  paddingHorizontal: 10,
-                  paddingVertical: 5,
-                  borderRadius: 4,
-                  marginBottom: 12,
-                }}
-              >
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontSize: 11,
-                    fontWeight: "700",
-                    letterSpacing: 0.3,
-                  }}
-                >
-                  At Lowest Price
-                </Text>
+              <View style={styles.lowestPriceBadge}>
+                <Text style={styles.lowestPriceBadgeText}>At Lowest Price</Text>
               </View>
 
               {/* Price Row */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: 16,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 16,
-                    color: "#999",
-                    textDecorationLine: "line-through",
-                  }}
-                >
-                  ₹2,000
-                </Text>
-                <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-                  <Text
-                    style={{
-                      fontSize: 20,
-                      color: "#0066ff",
-                      fontWeight: "500",
-                      marginRight: 6,
-                    }}
-                  >
-                    Now at
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 20,
-                      color: "#0066ff",
-                      fontWeight: "800",
-                      textShadowColor: "rgba(0, 102, 255, 0.3)",
-                      textShadowOffset: { width: 0, height: 2 },
-                      textShadowRadius: 4,
-                    }}
-                  >
-                    ₹1,200
-                  </Text>
+              <View style={styles.priceRow}>
+                <Text style={styles.originalPrice}>₹2,000</Text>
+                <View style={styles.currentPriceContainer}>
+                  <Text style={styles.nowAtText}>Now at</Text>
+                  <Text style={styles.currentPrice}>₹1,200</Text>
                 </View>
               </View>
 
@@ -361,271 +214,83 @@ const Disclosure = () => {
                 colors={["#003EF9", "#002593"]}
                 start={{ x: 1, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={{
-                  borderRadius: 11,
-                  elevation: 2,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.15,
-                  shadowRadius: 3,
-                  overflow: "hidden",
-                  marginBottom: 12,
-                }}
+                style={styles.buyNowGradient}
               >
                 <TouchableOpacity
                   onPress={toggleSellerLocation}
-                  style={{
-                    height: 60,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingLeft: 24,
-                    paddingRight: 16,
-                  }}
+                  style={styles.buyNowButton}
                 >
-                  <Text
-                    style={{
-                      color: "#fff",
-                      fontSize: 17,
-                      fontWeight: "700",
-                      flex: 1,
-                      textAlign: "center",
-                      marginLeft: 16,
-                    }}
-                  >
-                    Buy Now at ₹1,200
-                  </Text>
+                  <Text style={styles.buyNowText}>Buy Now at ₹1,200</Text>
                   <Ionicons
                     name="chevron-down"
                     size={22}
                     color="#fff"
                     style={{
-                      transform: [
-                        { rotate: isBuyNowExpanded ? "180deg" : "0deg" },
-                      ],
+                      transform: [{ rotate: isBuyNowExpanded ? "180deg" : "0deg" }],
                     }}
                   />
                 </TouchableOpacity>
 
                 {/* Expanded Seller Location Options */}
                 {isBuyNowExpanded && (
-                  <View
-                    style={{
-                      backgroundColor: "#97d9ffff",
-                      paddingHorizontal: 16,
-                      paddingVertical: 16,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        fontWeight: "600",
-                        color: "#000",
-                        marginBottom: 12,
-                      }}
-                    >
-                      Seller's Location
-                    </Text>
+                  <View style={styles.expandedSection}>
+                    <Text style={styles.sellerLocationTitle}>Seller's Location</Text>
 
                     {/* Location Address */}
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginBottom: 12,
-                        padding: 12,
-                        borderWidth: 1,
-                        borderColor: "#ccc",
-                        elevation: 2,
-                        shadowColor: "#000",
-                        backgroundColor: "#fdfdfeff",
-                        borderRadius: 8,
-                      }}
-                    >
-                      <Ionicons
-                        name="location"
-                        size={20}
-                        color="#0066ff"
-                        style={{ marginRight: 10 }}
-                      />
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={{
-                            fontSize: 13,
-                            color: "#000",
-                            fontWeight: "500",
-                            marginBottom: 2,
-                          }}
-                        >
-                          Newtown, Kolkata
-                        </Text>
-                        <Text
-                          style={{
-                            fontSize: 11,
-                            color: "#666",
-                          }}
-                        >
-                          Action Area I, New Town - 2.5 km away
-                        </Text>
+                    <View style={styles.locationCard}>
+                      <Ionicons name="location" size={20} color="#0066ff" style={styles.locationIcon} />
+                      <View style={styles.locationTextContainer}>
+                        <Text style={styles.locationTitle}>Newtown, Kolkata</Text>
+                        <Text style={styles.locationSubtitle}>Action Area I, New Town - 2.5 km away</Text>
                       </View>
                     </View>
 
                     {/* View on Map Button */}
-                    <TouchableOpacity
-                      style={{
-                        backgroundColor: "#0066ff",
-                        height: 44,
-                        borderRadius: 8,
-                        elevation: 2,
-                        shadowColor: "#000",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexDirection: "row",
-                        gap: 8,
-                        marginBottom: 10,
-                      }}
-                    >
+                    <TouchableOpacity style={styles.mapButton}>
                       <Ionicons name="map" size={18} color="#fff" />
-                      <Text
-                        style={{
-                          color: "#fff",
-                          fontSize: 14,
-                          fontWeight: "600",
-                        }}
-                      >
-                        View on Map
-                      </Text>
+                      <Text style={styles.mapButtonText}>View on Map</Text>
                     </TouchableOpacity>
                   </View>
                 )}
               </LinearGradient>
 
-              {/* View Seller Location Button with Gradient */}
+              {/* View Seller Location Button */}
               <LinearGradient
                 colors={["#6ED9F7", "#5dd3e8"]}
                 start={{ x: 1, y: 0 }}
                 end={{ x: 0, y: 0 }}
-                style={{
-                  height: 50,
-                  borderRadius: 11,
-                  marginBottom: 16,
-                  marginTop: -25,
-                  overflow: "hidden",
-                }}
+                style={styles.viewLocationGradient}
               >
-                <TouchableOpacity
-                  onPress={toggleSellerLocation}
-                  style={{
-                    flex: 1,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                  }}
-                >
+                <TouchableOpacity onPress={toggleSellerLocation} style={styles.viewLocationButton}>
                   <Ionicons name="location" size={18} color="#FF5757" />
-                  <Text
-                    style={{
-                      color: "#000",
-                      fontSize: 14,
-                      fontWeight: "500",
-                    }}
-                  >
-                    View seller's location
-                  </Text>
+                  <Text style={styles.viewLocationText}>View seller's location</Text>
                 </TouchableOpacity>
               </LinearGradient>
 
               {/* Terms & Conditions Accordion */}
-              <View
-                style={{
-                  backgroundColor: "#f5f9ff",
-                  borderWidth: 1,
-                  borderColor: "#63a2ef",
-                  paddingHorizontal: 16,
-                  paddingVertical: 14,
-                  borderRadius: 11,
-                }}
-              >
+              <View style={styles.termsContainer}>
                 <TouchableOpacity
                   onPress={() => setIsDisclosureOpen(!isDisclosureOpen)}
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
+                  style={styles.termsHeader}
                 >
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontWeight: "600",
-                      color: "#000",
-                    }}
-                  >
-                    Terms & Conditions
-                  </Text>
+                  <Text style={styles.termsTitle}>Terms & Conditions</Text>
                   <Ionicons
                     name="chevron-down"
                     size={18}
                     color="#666"
                     style={{
-                      transform: [
-                        { rotate: isDisclosureOpen ? "180deg" : "0deg" },
-                      ],
+                      transform: [{ rotate: isDisclosureOpen ? "180deg" : "0deg" }],
                     }}
                   />
                 </TouchableOpacity>
 
                 {isDisclosureOpen && (
-                  <View style={{ marginTop: 10 }}>
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        color: "#555",
-                        lineHeight: 20,
-                        marginBottom: 6,
-                      }}
-                    >
-                      • Payment will be made hand to hand there.
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        color: "#555",
-                        lineHeight: 20,
-                        marginBottom: 6,
-                      }}
-                    >
-                      • Buyer must inspect the book condition before purchase.
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        color: "#555",
-                        lineHeight: 20,
-                        marginBottom: 6,
-                      }}
-                    >
-                      • No returns or refunds after the transaction is complete.
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        color: "#555",
-                        lineHeight: 20,
-                        marginBottom: 6,
-                      }}
-                    >
-                      • Meet at a safe public location for the exchange.
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        color: "#555",
-                        lineHeight: 20,
-                      }}
-                    >
-                      • Seller is responsible for the accuracy of book details.
-                    </Text>
+                  <View style={styles.termsContent}>
+                    <Text style={styles.termItem}>• Payment will be made hand to hand there.</Text>
+                    <Text style={styles.termItem}>• Buyer must inspect the book condition before purchase.</Text>
+                    <Text style={styles.termItem}>• No returns or refunds after the transaction is complete.</Text>
+                    <Text style={styles.termItem}>• Meet at a safe public location for the exchange.</Text>
+                    <Text style={styles.termItem}>• Seller is responsible for the accuracy of book details.</Text>
                   </View>
                 )}
               </View>
@@ -633,244 +298,82 @@ const Disclosure = () => {
           </View>
 
           {/* Your Current Location Section */}
-          <View style={{ paddingHorizontal: SCREEN_WIDTH * 0.04, marginTop: 20 }}>
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "700",
-                color: "#000",
-                marginBottom: 10,
-              }}
-            >
-              Your Current Location
-            </Text>
+          <View style={[styles.currentLocationSection, { paddingHorizontal: SCREEN_WIDTH * 0.04 }]}>
+            <Text style={styles.currentLocationTitle}>Your Current Location</Text>
 
-            {/* Current Location Display with Gradient */}
+            {/* Current Location Display */}
             <LinearGradient
               colors={["#88D4FF", "#ffffffff"]}
               start={{ x: 0, y: 1 }}
               end={{ x: 0, y: 0 }}
-              style={{
-                borderTopLeftRadius: 6,
-                borderTopRightRadius: 6,
-                padding: 14,
-                flexDirection: "row",
-                alignItems: "center",
-                borderWidth: 1,
-                borderColor: "#bbdefb",
-              }}
+              style={styles.locationDisplayGradient}
             >
               <Ionicons name="location-outline" size={20} color="#0066ff" />
-              <Text
-                style={{
-                  flex: 1,
-                  fontSize: 13,
-                  color: "#555",
-                  marginLeft: 8,
-                }}
-                numberOfLines={1}
-              >
+              <Text style={styles.locationDisplayText} numberOfLines={1}>
                 {location}
               </Text>
             </LinearGradient>
 
-            {/* Update Location Button with Gradient */}
+            {/* Update Location Button */}
             <LinearGradient
               colors={["#90D7FF", "#05A5FF"]}
               start={{ x: 0, y: 1 }}
               end={{ x: 0, y: 0 }}
-              style={{
-                height: 44,
-                borderBottomLeftRadius: 6,
-                borderBottomRightRadius: 6,
-                marginTop: 0,
-                overflow: "hidden",
-              }}
+              style={styles.updateLocationGradient}
             >
-              <TouchableOpacity
-                style={{
-                  flex: 1,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    color: "#000",
-                    fontSize: 15,
-                    fontWeight: "600",
-                  }}
-                >
-                  Update Location
-                </Text>
+              <TouchableOpacity style={styles.updateLocationButton}>
+                <Text style={styles.updateLocationText}>Update Location</Text>
               </TouchableOpacity>
             </LinearGradient>
           </View>
 
           {/* Buy at ₹1,200 Full Width Button */}
           <TouchableOpacity
-            style={{
-              backgroundColor: "#4dd4e3",
-              height: 54,
-              marginHorizontal: SCREEN_WIDTH * 0.04,
-              borderRadius: 12,
-              alignItems: "center",
-              justifyContent: "center",
-              marginTop: 20,
-              marginBottom: 20,
-            }}
+            style={[styles.mainBuyButton, { marginHorizontal: SCREEN_WIDTH * 0.04 }]}
             onPress={handleBuy}
           >
-            <Text
-              style={{
-                color: "#000",
-                fontSize: 18,
-                fontWeight: "700",
-              }}
-            >
-              Buy at ₹1,200
-            </Text>
+            <Text style={styles.mainBuyButtonText}>Buy at ₹1,200</Text>
           </TouchableOpacity>
 
           {/* Divider */}
-          <View
-            style={{
-              height: 1,
-              backgroundColor: "#d4d4d4ff",
-              marginBottom: 12,
-            }}
-          />
+          <View style={styles.divider} />
 
-          <Text
-            style={{
-              fontSize: 20,
-              color: "#040404ff",
-              fontWeight: "500",
-              marginRight: 6,
-              left: SCREEN_WIDTH * 0.04,
-              marginBottom: 12,
-            }}
-          >
+          <Text style={[styles.suggestedTitle, { left: SCREEN_WIDTH * 0.04 }]}>
             suggested books
           </Text>
 
           {/* Grid of Books - 2 columns */}
-          <View
-            style={{
-              paddingHorizontal: SCREEN_WIDTH * 0.04,
-              flexDirection: "row",
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-            }}
-          >
+          <View style={[styles.gridContainer, { paddingHorizontal: SCREEN_WIDTH * 0.04 }]}>
             {gridBooks.map((book) => (
-              <View
-                key={book.id}
-                style={{
-                  width: "48%",
-                  backgroundColor: "#fff",
-                  borderRadius: 12,
-                  marginBottom: 16,
-                  overflow: "hidden",
-                  elevation: 1,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.08,
-                  shadowRadius: 2,
-                }}
-              >
+              <View key={book.id} style={[styles.gridCard, { width: "48%", height: SCREEN_HEIGHT * 0.3 }]}>
                 {/* Image Container */}
-                <View
-                  style={{
-                    height: SCREEN_HEIGHT * 0.225,
-                    backgroundColor: "#fafafa",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: 10,
-                    position: "relative",
-                  }}
-                >
+                <View style={[styles.gridImageContainer, { height: SCREEN_HEIGHT * 0.225 }]}>
                   {book.distance && (
-                    <View
-                      style={{
-                        position: "absolute",
-                        top: 8,
-                        left: 8,
-                        backgroundColor: "#ff6b6b",
-                        paddingHorizontal: 6,
-                        paddingVertical: 3,
-                        borderRadius: 8,
-                        zIndex: 10,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: "#fff",
-                          fontSize: 9,
-                          fontWeight: "700",
-                        }}
-                      >
-                        {book.distance}
-                      </Text>
+                    <View style={styles.gridDistanceBadge}>
+                      <Text style={styles.gridDistanceBadgeText}>{book.distance}</Text>
                     </View>
                   )}
                   <Image
                     source={{ uri: book.image }}
-                    style={{ width: "80%", height: "90%" }}
+                    style={styles.gridImage}
                     resizeMode="contain"
                   />
                 </View>
 
                 {/* Details */}
-                <View style={{ padding: 10 }}>
-                  <Text
-                    numberOfLines={2}
-                    style={{
-                      fontSize: 11,
-                      color: "#000",
-                      lineHeight: 15,
-                      height: 30,
-                      marginBottom: 6,
-                      fontWeight: "500",
-                    }}
-                  >
+                <View style={styles.gridDetails}>
+                  <Text numberOfLines={2} style={styles.gridTitle}>
                     {book.title}
                   </Text>
 
                   {/* Price Row */}
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 10,
-                        color: "#999",
-                        textDecorationLine: "line-through",
-                      }}
-                    >
+                  <View style={styles.gridPriceRow}>
+                    <Text style={styles.gridOriginalPrice}>
                       ₹{book.priceMrp.toLocaleString()}
                     </Text>
-                    <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-                      <Text
-                        style={{
-                          fontSize: 9,
-                          color: "#0066ff",
-                          marginRight: 3,
-                        }}
-                      >
-                        Now at
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          color: "#0066ff",
-                          fontWeight: "700",
-                        }}
-                      >
+                    <View style={styles.gridCurrentPriceContainer}>
+                      <Text style={styles.gridNowAtText}>Now at</Text>
+                      <Text style={styles.gridCurrentPrice}>
                         ₹{book.priceNow.toLocaleString()}
                       </Text>
                     </View>
@@ -883,42 +386,14 @@ const Disclosure = () => {
 
         {/* Loading overlay with GIF */}
         {isBuying && (
-          <View
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.4)",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <View
-              style={{
-                width: SCREEN_WIDTH * 0.6,
-                padding: 20,
-                borderRadius: 16,
-                backgroundColor: "#fff",
-                alignItems: "center",
-              }}
-            >
+          <View style={styles.loadingOverlay}>
+            <View style={[styles.loadingCard, { width: SCREEN_WIDTH * 0.6 }]}>
               <Image
                 source={loadingGif}
-                style={{ width: 120, height: 120, marginBottom: 10 }}
+                style={styles.loadingGif}
                 resizeMode="contain"
               />
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontWeight: "500",
-                  color: "#374151",
-                  textAlign: "center",
-                }}
-              >
-                Processing your order...
-              </Text>
+              <Text style={styles.loadingText}>Processing your order...</Text>
             </View>
           </View>
         )}
@@ -926,5 +401,369 @@ const Disclosure = () => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#d4f1f4" },
+  safeArea: { flex: 1 },
+  header: {
+    paddingVertical: 15,
+    paddingTop: 50,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#d4f1f4",
+  },
+  backButton: { padding: 4 },
+  searchBar: {
+    flex: 1,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: "#fff",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 15,
+    color: "#000",
+    fontWeight: "400",
+  },
+  sellButton: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  sellIcon: { width: 24, height: 24 },
+  scrollView: { flex: 1 },
+  scrollContent: { paddingBottom: 20 },
+  carouselContainer: { position: "relative" },
+  distanceBadge: {
+    position: "absolute",
+    bottom: 12,
+    left: 16,
+    backgroundColor: "#ff6b6b",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    zIndex: 10,
+  },
+  distanceBadgeText: { color: "#fff", fontSize: 11, fontWeight: "700" },
+  imageCounter: {
+    position: "absolute",
+    top: 12,
+    right: 16,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    zIndex: 10,
+  },
+  imageCounterText: { color: "#fff", fontSize: 12, fontWeight: "600" },
+  imageContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+    paddingVertical: 20,
+    borderRadius: 15,
+  },
+  productImage: { width: "65%", height: "100%", borderRadius: 4 },
+  productDetails: { paddingTop: 12 },
+  productTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#000",
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  moreText: { color: "#0066ff", fontWeight: "400" },
+  lowestPriceBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#0066ff",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 4,
+    marginBottom: 12,
+  },
+  lowestPriceBadgeText: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+  priceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  originalPrice: {
+    fontSize: 16,
+    color: "#999",
+    textDecorationLine: "line-through",
+  },
+  currentPriceContainer: { flexDirection: "row", alignItems: "baseline" },
+  nowAtText: {
+    fontSize: 20,
+    color: "#0066ff",
+    fontWeight: "500",
+    marginRight: 6,
+  },
+  currentPrice: {
+    fontSize: 20,
+    color: "#0066ff",
+    fontWeight: "800",
+    textShadowColor: "rgba(0, 102, 255, 0.3)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  buyNowGradient: {
+    borderRadius: 11,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    overflow: "hidden",
+    marginBottom: 12,
+  },
+  buyNowButton: {
+    height: 60,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingLeft: 24,
+    paddingRight: 16,
+  },
+  buyNowText: {
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: "700",
+    flex: 1,
+    textAlign: "center",
+    marginLeft: 16,
+  },
+  expandedSection: {
+    backgroundColor: "#97d9ffff",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  sellerLocationTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#000",
+    marginBottom: 12,
+  },
+  locationCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    elevation: 2,
+    shadowColor: "#000",
+    backgroundColor: "#fdfdfeff",
+    borderRadius: 8,
+  },
+  locationIcon: { marginRight: 10 },
+  locationTextContainer: { flex: 1 },
+  locationTitle: {
+    fontSize: 13,
+    color: "#000",
+    fontWeight: "500",
+    marginBottom: 2,
+  },
+  locationSubtitle: { fontSize: 11, color: "#666" },
+  mapButton: {
+    backgroundColor: "#0066ff",
+    height: 44,
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: "#000",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 10,
+  },
+  mapButtonText: { color: "#fff", fontSize: 14, fontWeight: "600" },
+  viewLocationGradient: {
+    height: 50,
+    borderRadius: 11,
+    marginBottom: 16,
+    marginTop: -25,
+    overflow: "hidden",
+  },
+  viewLocationButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  viewLocationText: { color: "#000", fontSize: 14, fontWeight: "500" },
+  termsContainer: {
+    backgroundColor: "#f5f9ff",
+    borderWidth: 1,
+    borderColor: "#63a2ef",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 11,
+  },
+  termsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  termsTitle: { fontSize: 14, fontWeight: "600", color: "#000" },
+  termsContent: { marginTop: 10 },
+  termItem: {
+    fontSize: 13,
+    color: "#555",
+    lineHeight: 20,
+    marginBottom: 6,
+  },
+  currentLocationSection: { marginTop: 20 },
+  currentLocationTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#000",
+    marginBottom: 10,
+  },
+  locationDisplayGradient: {
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#bbdefb",
+  },
+  locationDisplayText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#555",
+    marginLeft: 8,
+  },
+  updateLocationGradient: {
+    height: 44,
+    borderBottomLeftRadius: 6,
+    borderBottomRightRadius: 6,
+    marginTop: 0,
+    overflow: "hidden",
+  },
+  updateLocationButton: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  updateLocationText: { color: "#000", fontSize: 15, fontWeight: "600" },
+  mainBuyButton: {
+    backgroundColor: "#4dd4e3",
+    height: 54,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  mainBuyButtonText: { color: "#000", fontSize: 18, fontWeight: "700" },
+  divider: { height: 1, backgroundColor: "#d4d4d4ff", marginBottom: 12 },
+  suggestedTitle: {
+    fontSize: 20,
+    color: "#040404ff",
+    fontWeight: "500",
+    marginRight: 6,
+    marginBottom: 12,
+  },
+  gridContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  gridCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: "hidden",
+    elevation: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+  },
+  gridImageContainer: {
+    backgroundColor: "#fafafa",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 10,
+    position: "relative",
+  },
+  gridDistanceBadge: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    backgroundColor: "#ff6b6b",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
+    zIndex: 10,
+  },
+  gridDistanceBadgeText: { color: "#fff", fontSize: 9, fontWeight: "700" },
+  gridImage: { width: "80%", height: "90%" },
+  gridDetails: { padding: 10 },
+  gridTitle: {
+    fontSize: 11,
+    color: "#000",
+    lineHeight: 15,
+    height: 30,
+    marginBottom: 6,
+    fontWeight: "500",
+  },
+  gridPriceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  gridOriginalPrice: {
+    fontSize: 10,
+    color: "#999",
+    textDecorationLine: "line-through",
+  },
+  gridCurrentPriceContainer: { flexDirection: "row", alignItems: "baseline" },
+  gridNowAtText: { fontSize: 9, color: "#0066ff", marginRight: 3 },
+  gridCurrentPrice: { fontSize: 13, color: "#0066ff", fontWeight: "700" },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingCard: {
+    padding: 20,
+    borderRadius: 16,
+    backgroundColor: "#fff",
+    alignItems: "center",
+  },
+  loadingGif: { width: 120, height: 120, marginBottom: 10 },
+  loadingText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#374151",
+    textAlign: "center",
+  },
+});
 
 export default Disclosure;

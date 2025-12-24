@@ -1,9 +1,8 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState, useEffect } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   StyleSheet,
   ImageBackground,
   Image,
@@ -12,11 +11,15 @@ import {
   TextInput,
   useWindowDimensions,
   Modal,
+  Pressable,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 interface ProfileData {
   name: string;
@@ -26,7 +29,11 @@ interface ProfileData {
   address: string;
 }
 
-const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+const clamp = (n: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, n));
+
+const PROFILE_IMAGE_KEY = "@profile_image_uri";
+const PROFILE_DATA_KEY = "@profile_data";
 
 const ProfileScreen: React.FC = () => {
   const { width, height } = useWindowDimensions();
@@ -41,18 +48,64 @@ const ProfileScreen: React.FC = () => {
   });
 
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
-  const [pendingAvatarUri, setPendingAvatarUri] = useState<string | null>(null);
-  const [showCropPreview, setShowCropPreview] = useState(false);
-  const [showImageViewer, setShowImageViewer] = useState(false);
   const [pendingEmail, setPendingEmail] = useState(profileData.email);
-  const [editingField, setEditingField] = useState<keyof ProfileData | null>(null);
+  const [editingField, setEditingField] = useState<keyof ProfileData | null>(
+    null
+  );
   const [isDirty, setIsDirty] = useState(false);
 
+  // Date picker state
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Image viewer state
+  const [imageViewerVisible, setImageViewerVisible] = useState(false);
+
   const inputRefs = useRef<Record<string, TextInput | null>>({});
+  const scrollViewRef = useRef<KeyboardAwareScrollView>(null);
+
+  // Load saved data on mount
+  useEffect(() => {
+    loadProfileData();
+  }, []);
+
+  const loadProfileData = async () => {
+    try {
+      const savedImage = await AsyncStorage.getItem(PROFILE_IMAGE_KEY);
+      const savedData = await AsyncStorage.getItem(PROFILE_DATA_KEY);
+
+      if (savedImage) {
+        setAvatarUri(savedImage);
+      }
+
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        setProfileData(parsedData);
+        setPendingEmail(parsedData.email);
+      }
+    } catch (error) {
+      console.error("Error loading profile data:", error);
+    }
+  };
 
   const handleChange = (field: keyof ProfileData) => {
-    setEditingField(field);
-    setTimeout(() => inputRefs.current[field]?.focus(), 0);
+    if (field === "dob") {
+      const parts = profileData.dob.split("/");
+      if (parts.length === 3) {
+        const date = new Date(
+          parseInt(parts[2]),
+          parseInt(parts[1]) - 1,
+          parseInt(parts[0])
+        );
+        if (!isNaN(date.getTime())) {
+          setSelectedDate(date);
+        }
+      }
+      setShowDatePicker(true);
+    } else {
+      setEditingField(field);
+      setTimeout(() => inputRefs.current[field]?.focus(), 0);
+    }
   };
 
   const stopEditing = () => setEditingField(null);
@@ -67,52 +120,78 @@ const ProfileScreen: React.FC = () => {
 
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) return;
+    if (!permission.granted) {
+      Alert.alert(
+        "Permission Required",
+        "Please grant camera permission to take photos."
+      );
+      return;
+    }
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
       quality: 1,
+      aspect: [1, 1],
     });
 
     if (!result.canceled) {
-      setPendingAvatarUri(result.assets[0].uri);
-      setShowCropPreview(true);
+      setAvatarUri(result.assets[0].uri);
+      setIsDirty(true);
     }
   };
 
   const pickFromGallery = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) return;
+    const permission =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        "Permission Required",
+        "Please grant gallery permission to select photos."
+      );
+      return;
+    }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
       quality: 1,
+      aspect: [1, 1],
     });
 
     if (!result.canceled) {
-      setPendingAvatarUri(result.assets[0].uri);
-      setShowCropPreview(true);
+      setAvatarUri(result.assets[0].uri);
+      setIsDirty(true);
     }
   };
 
-  const confirmCroppedImage = () => {
-    setAvatarUri(pendingAvatarUri);
-    setIsDirty(true);
-    setShowCropPreview(false);
-    setPendingAvatarUri(null);
+  const handleDateChange = (event: any, date?: Date) => {
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+    }
+
+    if (date && event.type !== "dismissed") {
+      setSelectedDate(date);
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      const formattedDate = `${day}/${month}/${year}`;
+
+      setProfileData((p) => ({ ...p, dob: formattedDate }));
+      setIsDirty(true);
+    } else if (event.type === "dismissed") {
+      setShowDatePicker(false);
+    }
   };
 
-  const cancelCroppedImage = () => {
-    setShowCropPreview(false);
-    setPendingAvatarUri(null);
+  const confirmIOSDate = () => {
+    setShowDatePicker(false);
   };
 
   const isValidEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
-  const updateProfile = () => {
+  const saveProfile = async () => {
     if (pendingEmail.trim() !== profileData.email.trim()) {
       if (!isValidEmail(pendingEmail)) {
         Alert.alert("Invalid email", "Please enter a valid email address.");
@@ -120,14 +199,28 @@ const ProfileScreen: React.FC = () => {
       }
     }
 
-    const committedEmail = pendingEmail.trim();
-    const nextProfile = { ...profileData, email: committedEmail };
+    try {
+      const committedEmail = pendingEmail.trim();
+      const nextProfile = { ...profileData, email: committedEmail };
 
-    setProfileData(nextProfile);
-    console.log("Update profile", nextProfile, avatarUri);
+      // Save to AsyncStorage
+      await AsyncStorage.setItem(PROFILE_DATA_KEY, JSON.stringify(nextProfile));
 
-    setIsDirty(false);
-    setEditingField(null);
+      if (avatarUri) {
+        await AsyncStorage.setItem(PROFILE_IMAGE_KEY, avatarUri);
+      }
+
+      setProfileData(nextProfile);
+      console.log("Profile saved successfully", nextProfile, avatarUri);
+
+      setIsDirty(false);
+      setEditingField(null);
+
+      Alert.alert("Success", "Profile updated successfully!");
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      Alert.alert("Error", "Failed to save profile. Please try again.");
+    }
   };
 
   const isEditing = useMemo(() => editingField !== null, [editingField]);
@@ -139,26 +232,36 @@ const ProfileScreen: React.FC = () => {
       end={{ x: 1, y: 1 }}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <KeyboardAwareScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.scrollContent}
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        extraHeight={Platform.OS === "ios" ? 120 : 150}
+        extraScrollHeight={Platform.OS === "ios" ? 120 : 150}
+        keyboardOpeningTime={0}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header with Back Button */}
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             activeOpacity={0.7}
             onPress={() => router.push("/(screen)/Profile")}
           >
-            <Ionicons name="arrow-back" size={22} color="black" />
+            <Ionicons name="arrow-back" size={clamp((width / 375) * 22, 20, 24)} color="black" />
             <Text style={styles.headerText}>Your profile</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Avatar - Clickable to view full screen */}
+        {/* Avatar */}
         <View style={styles.hero}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatarWrapper}>
               <TouchableOpacity
+                onPress={() => setImageViewerVisible(true)}
                 activeOpacity={0.8}
-                onPress={() => setShowImageViewer(true)}
               >
                 <View style={styles.avatarRing}>
                   <Image
@@ -178,7 +281,7 @@ const ProfileScreen: React.FC = () => {
                 onPress={onPressCamera}
                 activeOpacity={0.8}
               >
-                <Ionicons name="camera" size={14} color="#11a7ecff" />
+                <Ionicons name="camera" size={clamp((width / 375) * 16, 14, 18)} color="#11a7ecff" />
               </TouchableOpacity>
             </View>
           </View>
@@ -211,22 +314,16 @@ const ProfileScreen: React.FC = () => {
               styles={styles}
               label="Mobile"
               value={profileData.mobile}
-              editable={editingField === "mobile"}
-              disabledAction={isEditing && editingField !== "mobile"}
-              onPressChange={() => handleChange("mobile")}
-              onChangeText={(t) => {
-                setProfileData((p) => ({ ...p, mobile: t }));
-                setIsDirty(true);
-              }}
-              inputRef={(r) => (inputRefs.current["mobile"] = r)}
-              keyboardType="phone-pad"
-              onBlur={stopEditing}
+              disabled={true}
+              editable={false}
             />
 
             <Field
               styles={styles}
               label="Email"
-              value={editingField === "email" ? pendingEmail : profileData.email}
+              value={
+                editingField === "email" ? pendingEmail : profileData.email
+              }
               editable={editingField === "email"}
               disabledAction={isEditing && editingField !== "email"}
               onPressChange={() => handleChange("email")}
@@ -243,15 +340,9 @@ const ProfileScreen: React.FC = () => {
               styles={styles}
               label="Date of birth"
               value={profileData.dob}
-              editable={editingField === "dob"}
-              disabledAction={isEditing && editingField !== "dob"}
+              editable={false}
+              disabledAction={isEditing}
               onPressChange={() => handleChange("dob")}
-              onChangeText={(t) => {
-                setProfileData((p) => ({ ...p, dob: t }));
-                setIsDirty(true);
-              }}
-              inputRef={(r) => (inputRefs.current["dob"] = r)}
-              onBlur={stopEditing}
             />
 
             <Field
@@ -271,86 +362,97 @@ const ProfileScreen: React.FC = () => {
           </View>
         </ImageBackground>
 
-        {/* Update Profile Button */}
+        {/* Save Profile Button */}
         <TouchableOpacity
-          style={[styles.updateButton, !isDirty && styles.updateButtonDisabled]}
+          style={[
+            styles.updateButton,
+            !isDirty && styles.updateButtonDisabled,
+          ]}
           activeOpacity={0.85}
           disabled={!isDirty}
-          onPress={updateProfile}
+          onPress={saveProfile}
         >
-          <Text style={styles.updateButtonText}>Update profile</Text>
+          <Ionicons
+            name="save-outline"
+            size={clamp((width / 375) * 20, 18, 22)}
+            color="rgba(255,255,255,0.78)"
+            style={styles.saveIcon}
+          />
+          <Text style={styles.updateButtonText}>Save Profile</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
-      {/* Crop Preview Modal */}
+      {/* Date Picker */}
+      {showDatePicker && (
+        <>
+          {Platform.OS === "ios" ? (
+            <Modal
+              transparent={true}
+              animationType="slide"
+              visible={showDatePicker}
+              onRequestClose={() => setShowDatePicker(false)}
+            >
+              <Pressable
+                style={styles.modalOverlay}
+                onPress={() => setShowDatePicker(false)}
+              >
+                <View style={styles.datePickerContainer}>
+                  <View style={styles.datePickerHeader}>
+                    <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                      <Text style={styles.datePickerCancel}>Cancel</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.datePickerTitle}>Select Date</Text>
+                    <TouchableOpacity onPress={confirmIOSDate}>
+                      <Text style={styles.datePickerConfirm}>Done</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <DateTimePicker
+                    value={selectedDate}
+                    mode="date"
+                    display="spinner"
+                    onChange={handleDateChange}
+                    maximumDate={new Date()}
+                    textColor="#000000"
+                  />
+                </View>
+              </Pressable>
+            </Modal>
+          ) : (
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display="default"
+              onChange={handleDateChange}
+              maximumDate={new Date()}
+            />
+          )}
+        </>
+      )}
+
+      {/* Image Viewer Modal */}
       <Modal
-        visible={showCropPreview}
+        visible={imageViewerVisible}
         transparent={true}
         animationType="fade"
-        onRequestClose={cancelCroppedImage}
+        onRequestClose={() => setImageViewerVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.previewCard}>
-            <Text style={styles.previewTitle}>Save this photo?</Text>
-            
-            {pendingAvatarUri && (
-              <Image
-                source={{ uri: pendingAvatarUri }}
-                style={styles.previewImage}
-                resizeMode="cover"
-              />
-            )}
-
-            <View style={styles.previewButtons}>
-              <TouchableOpacity
-                style={[styles.previewButton, styles.cancelButton]}
-                onPress={cancelCroppedImage}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.previewButton, styles.saveButton]}
-                onPress={confirmCroppedImage}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.saveButtonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Full Screen Image Viewer Modal */}
-      <Modal
-        visible={showImageViewer}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowImageViewer(false)}
-      >
-        <View style={styles.imageViewerOverlay}>
-          {/* Close Button */}
+        <View style={styles.imageViewerContainer}>
           <TouchableOpacity
             style={styles.closeButton}
-            onPress={() => setShowImageViewer(false)}
+            onPress={() => setImageViewerVisible(false)}
             activeOpacity={0.8}
           >
-            <Ionicons name="close" size={32} color="#fff" />
+            <Ionicons name="close" size={30} color="#FFFFFF" />
           </TouchableOpacity>
-
-          {/* Full Screen Image */}
-          <View style={styles.imageViewerContainer}>
-            <Image
-              source={
-                avatarUri
-                  ? { uri: avatarUri }
-                  : require("../../assets/images/profile.png")
-              }
-              style={styles.fullScreenImage}
-              resizeMode="contain"
-            />
-          </View>
+          <Image
+            source={
+              avatarUri
+                ? { uri: avatarUri }
+                : require("../../assets/images/profile.png")
+            }
+            style={styles.fullScreenImage}
+            resizeMode="contain"
+          />
         </View>
       </Modal>
     </LinearGradient>
@@ -425,16 +527,22 @@ function Field({
 }
 
 const makeStyles = (width: number, height: number) => {
-  const s = (n: number) => (width / 375) * n;
+  // Responsive scaling based on screen width (375 is baseline iPhone)
+  const scale = (size: number) => (width / 375) * size;
+  const verticalScale = (size: number) => (height / 812) * size;
+  const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
-  const topPad = clamp(s(45), 24, 60);
-  const sidePad = clamp(s(16), 12, 22);
+  // Screen size breakpoints for better categorization
+  const isSmallDevice = width < 375; // iPhone SE, small Android
+  const isMediumDevice = width >= 375 && width < 414; // iPhone 12/13/14
+  const isLargeDevice = width >= 414; // iPhone Pro Max, large Android
 
-  const avatarSize = clamp(s(110), 92, 124);
-  const avatarRadius = avatarSize / 2;
-
-  const heroHeight = clamp(s(150), 120, 170);
-  const avatarOverlap = clamp(s(55), 42, 70);
+  // Dynamic sizing constants - OPTIMIZED FOR NO SCROLL
+  const PROFILE_IMAGE_SIZE = clamp(scale(110), 90, 130);
+  const topPad = clamp(verticalScale(35), 25, 50);
+  const sidePad = clamp(scale(16), 14, 24);
+  const heroHeight = clamp(verticalScale(130), 100, 160);
+  const avatarOverlap = clamp(scale(50), 40, 65);
 
   return StyleSheet.create({
     container: { flex: 1 },
@@ -442,18 +550,27 @@ const makeStyles = (width: number, height: number) => {
     scrollContent: {
       paddingHorizontal: sidePad,
       paddingTop: topPad,
-      paddingBottom: clamp(s(30), 18, 40),
+      paddingBottom: clamp(verticalScale(25), 20, 40),
     },
 
-    header: { marginBottom: clamp(s(8), 6, 12) },
+    header: { 
+      marginBottom: clamp(scale(6), 4, 10),
+      width: '100%',
+    },
 
-    backButton: { flexDirection: "row", alignItems: "center" },
+    backButton: { 
+      flexDirection: "row", 
+      alignItems: "center",
+      minHeight: 44,
+      paddingVertical: 6,
+    },
 
     headerText: {
-      fontSize: clamp(s(18), 16, 20),
+      fontSize: clamp(moderateScale(18), 16, 22),
       fontWeight: "800",
       color: "#000",
-      marginLeft: clamp(s(6), 4, 10),
+      marginLeft: clamp(scale(8), 6, 12),
+      flexShrink: 1,
     },
 
     hero: {
@@ -461,8 +578,9 @@ const makeStyles = (width: number, height: number) => {
       justifyContent: "center",
       alignItems: "center",
       position: "relative",
-      marginBottom: clamp(s(8), 6, 12),
-      marginTop: clamp(s(20), 10, 26),
+      marginBottom: clamp(scale(6), 4, 10),
+      marginTop: clamp(verticalScale(10), 6, 20),
+      width: '100%',
     },
 
     avatarContainer: {
@@ -475,10 +593,10 @@ const makeStyles = (width: number, height: number) => {
     avatarWrapper: { position: "relative" },
 
     avatarRing: {
-      width: avatarSize,
-      height: avatarSize,
-      borderRadius: avatarRadius,
-      borderWidth: 2,
+      width: PROFILE_IMAGE_SIZE,
+      height: PROFILE_IMAGE_SIZE,
+      borderRadius: PROFILE_IMAGE_SIZE / 2,
+      borderWidth: clamp(scale(3), 2.5, 4),
       borderColor: "rgba(102, 52, 201, 0.55)",
       backgroundColor: "rgba(255,255,255,0.65)",
       overflow: "hidden",
@@ -486,15 +604,18 @@ const makeStyles = (width: number, height: number) => {
       justifyContent: "center",
     },
 
-    profileImage: { width: "100%", height: "100%" },
+    profileImage: { 
+      width: "100%", 
+      height: "100%",
+    },
 
     editBadge: {
       position: "absolute",
-      right: clamp(s(2), 0, 6),
-      bottom: clamp(s(6), 4, 10),
-      width: clamp(s(26), 22, 30),
-      height: clamp(s(26), 22, 30),
-      borderRadius: clamp(s(26), 22, 30) / 2,
+      right: clamp(scale(4), 2, 8),
+      bottom: clamp(scale(6), 4, 10),
+      width: clamp(scale(32), 28, 36),
+      height: clamp(scale(32), 28, 36),
+      borderRadius: clamp(scale(32), 28, 36) / 2,
       backgroundColor: "#FFFFFF",
       borderWidth: 1,
       borderColor: "rgba(0,0,0,0.25)",
@@ -503,54 +624,60 @@ const makeStyles = (width: number, height: number) => {
     },
 
     formCard: {
-      minHeight: clamp(s(360), 320, 420),
-      marginBottom: clamp(s(16), 12, 20),
+      minHeight: clamp(verticalScale(420), 380, 150),
+      marginBottom: clamp(scale(2), 1, 4),
       overflow: "hidden",
+      width: '100%',
     },
 
-    formCardImage: { borderRadius: 14 },
+    formCardImage: { 
+      borderRadius: clamp(scale(14), 12, 18),
+    },
 
     formContent: {
       flex: 1,
-      paddingHorizontal: clamp(s(18), 14, 22),
-      paddingTop: clamp(s(92), 76, 110),
-      paddingBottom: clamp(s(14), 10, 18),
+      paddingHorizontal: clamp(scale(20), 16, 38),
+      paddingTop: clamp(verticalScale(85), 100, 280),
+      paddingBottom: clamp(verticalScale(25), 20, 40),
     },
 
     fieldWrap: {
-      marginBottom: clamp(s(10), 8, 12),
-      marginTop: clamp(s(6), 4, 8),
+      marginBottom: clamp(verticalScale(14), 12, 20),
+      marginTop: clamp(scale(2), 1, 4),
       position: "relative",
+      width: '100%',
     },
 
     floatingLabel: {
       position: "absolute",
-      left: clamp(s(14), 10, 18),
-      top: -7,
-      paddingHorizontal: clamp(s(6), 4, 8),
+      left: clamp(scale(14), 12, 18),
+      top: -8,
+      paddingHorizontal: clamp(scale(8), 6, 10),
       backgroundColor: "#FFFFFFFF",
-      borderRadius: 6,
+      borderRadius: clamp(scale(6), 5, 8),
       zIndex: 2,
       borderWidth: 1,
       borderColor: "#44D6FF",
     },
 
     floatingLabelText: {
-      fontSize: clamp(s(10), 9, 11),
+      fontSize: clamp(moderateScale(10), 9, 12),
       fontWeight: "700",
       color: "rgba(0,0,0,0.65)",
     },
 
     boxRow: {
-      minHeight: clamp(s(44), 42, 48),
-      borderRadius: 10,
+      minHeight: clamp(verticalScale(48), 42, 54),
+      borderRadius: clamp(scale(10), 9, 13),
       borderWidth: 1,
       borderColor: "#44D6FF",
       backgroundColor: "rgba(255, 255, 255, 0.36)",
-      paddingHorizontal: clamp(s(14), 12, 16),
+      paddingHorizontal: clamp(scale(14), 12, 18),
+      paddingVertical: clamp(scale(5), 3, 7),
       alignItems: "center",
       flexDirection: "row",
       justifyContent: "space-between",
+      width: '100%',
     },
 
     boxRowDisabled: {
@@ -560,46 +687,56 @@ const makeStyles = (width: number, height: number) => {
 
     boxValue: {
       flex: 1,
-      marginRight: clamp(s(10), 8, 12),
-      fontSize: clamp(s(16), 14, 17),
+      marginRight: clamp(scale(12), 8, 16),
+      fontSize: clamp(moderateScale(15), 13, 17),
       fontWeight: "400",
       color: "#0B0B0B",
     },
 
-    boxValueDisabled: { color: "rgba(255,255,255,0.88)" },
+    boxValueDisabled: { 
+      color: "rgba(255,255,255,0.88)" 
+    },
 
     boxInput: {
       flex: 1,
-      marginRight: clamp(s(10), 8, 12),
-      fontSize: clamp(s(16), 14, 17),
+      marginRight: clamp(scale(12), 8, 16),
+      fontSize: clamp(moderateScale(15), 13, 17),
       fontWeight: "400",
       color: "#0B0B0B",
-      paddingVertical: 0,
+      paddingVertical: Platform.OS === "ios" 
+        ? clamp(scale(8), 6, 12) 
+        : clamp(scale(4), 2, 8),
+      minHeight: Platform.OS === "android" ? 40 : 42,
     },
 
     changeButton: {
-      fontSize: clamp(s(11), 10, 12),
+      fontSize: clamp(moderateScale(11), 10, 13),
       color: "#EF4444",
       fontWeight: "800",
-      letterSpacing: 0.6,
+      letterSpacing: clamp(scale(0.6), 0.5, 0.8),
+      paddingHorizontal: clamp(scale(6), 4, 8),
+      paddingVertical: 4,
     },
 
     changeDisabledWrap: { opacity: 0.35 },
 
     updateButton: {
-      height: clamp(s(50), 46, 54),
-      borderRadius: 12,
+      height: clamp(verticalScale(50), 46, 58),
+      borderRadius: clamp(scale(12), 10, 16),
       backgroundColor: "rgba(20, 218, 232, 0.9)",
       borderWidth: 1,
       borderColor: "rgba(0,0,0,0.08)",
       alignItems: "center",
       justifyContent: "center",
+      flexDirection: "row",
+      marginTop: clamp(verticalScale(8), 6, 14),
+      width: '100%',
       ...Platform.select({
-        android: { elevation: 2 },
+        android: { elevation: 3 },
         ios: {
           shadowColor: "#000",
-          shadowOpacity: 0.07,
-          shadowRadius: 10,
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
           shadowOffset: { width: 0, height: 6 },
         },
       }),
@@ -607,86 +744,60 @@ const makeStyles = (width: number, height: number) => {
 
     updateButtonDisabled: { opacity: 0.45 },
 
+    saveIcon: {
+      marginRight: clamp(scale(10), 8, 12),
+    },
+
     updateButtonText: {
-      fontSize: clamp(s(16), 14, 17),
+      fontSize: clamp(moderateScale(16), 14, 19),
       fontWeight: "700",
       color: "rgba(255,255,255,0.78)",
     },
 
-    // Crop Preview Modal styles
+    // Date Picker Styles
     modalOverlay: {
       flex: 1,
-      backgroundColor: "rgba(0,0,0,0.7)",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: sidePad,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      justifyContent: "flex-end",
     },
 
-    previewCard: {
-      backgroundColor: "#fff",
-      borderRadius: 20,
-      padding: clamp(s(24), 20, 28),
-      width: "90%",
-      maxWidth: 400,
-      alignItems: "center",
+    datePickerContainer: {
+      backgroundColor: "#FFFFFF",
+      borderTopLeftRadius: clamp(scale(20), 18, 26),
+      borderTopRightRadius: clamp(scale(20), 18, 26),
+      paddingBottom: Platform.OS === "ios" ? clamp(verticalScale(30), 20, 40) : clamp(scale(20), 16, 28),
     },
 
-    previewTitle: {
-      fontSize: clamp(s(18), 16, 20),
-      fontWeight: "700",
-      color: "#000",
-      marginBottom: clamp(s(16), 12, 20),
-    },
-
-    previewImage: {
-      width: clamp(s(200), 180, 220),
-      height: clamp(s(200), 180, 220),
-      borderRadius: clamp(s(100), 90, 110),
-      borderWidth: 3,
-      borderColor: "#44D6FF",
-      marginBottom: clamp(s(20), 16, 24),
-    },
-
-    previewButtons: {
+    datePickerHeader: {
       flexDirection: "row",
-      gap: clamp(s(12), 10, 14),
-      width: "100%",
-    },
-
-    previewButton: {
-      flex: 1,
-      height: clamp(s(48), 44, 52),
-      borderRadius: 12,
+      justifyContent: "space-between",
       alignItems: "center",
-      justifyContent: "center",
+      paddingHorizontal: clamp(scale(20), 16, 28),
+      paddingVertical: clamp(verticalScale(16), 12, 20),
+      borderBottomWidth: 1,
+      borderBottomColor: "#E5E5E5",
     },
 
-    cancelButton: {
-      backgroundColor: "#F3F4F6",
-      borderWidth: 1,
-      borderColor: "#D1D5DB",
-    },
-
-    cancelButtonText: {
-      fontSize: clamp(s(15), 14, 16),
+    datePickerTitle: {
+      fontSize: clamp(moderateScale(17), 15, 20),
       fontWeight: "600",
-      color: "#6B7280",
+      color: "#000000",
     },
 
-    saveButton: {
-      backgroundColor: "rgba(20, 218, 232, 0.9)",
-      borderWidth: 1,
-      borderColor: "rgba(0,0,0,0.08)",
+    datePickerCancel: {
+      fontSize: clamp(moderateScale(16), 14, 18),
+      color: "#EF4444",
+      fontWeight: "600",
     },
 
-    saveButtonText: {
-      fontSize: clamp(s(15), 14, 16),
-      fontWeight: "700",
-      color: "#fff",
+    datePickerConfirm: {
+      fontSize: clamp(moderateScale(16), 14, 18),
+      color: "#14DAE8",
+      fontWeight: "600",
     },
 
-    // Full Screen Image Viewer styles
-    imageViewerOverlay: {
+    // Image Viewer Styles
+    imageViewerContainer: {
       flex: 1,
       backgroundColor: "rgba(0,0,0,0.95)",
       justifyContent: "center",
@@ -695,27 +806,24 @@ const makeStyles = (width: number, height: number) => {
 
     closeButton: {
       position: "absolute",
-      top: clamp(s(50), 40, 60),
-      right: clamp(s(20), 16, 24),
+      top: Platform.OS === "ios" 
+        ? clamp(verticalScale(55), 45, 70) 
+        : clamp(verticalScale(35), 28, 45),
+      right: clamp(scale(20), 16, 28),
       zIndex: 10,
-      width: clamp(s(44), 40, 48),
-      height: clamp(s(44), 40, 48),
-      borderRadius: clamp(s(22), 20, 24),
+      width: clamp(scale(44), 40, 50),
+      height: clamp(scale(44), 40, 50),
+      borderRadius: clamp(scale(44), 40, 50) / 2,
       backgroundColor: "rgba(255,255,255,0.2)",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-
-    imageViewerContainer: {
-      width: width,
-      height: height,
       justifyContent: "center",
       alignItems: "center",
     },
 
     fullScreenImage: {
-      width: "100%",
-      height: "100%",
+      width: width * 0.9,
+      height: height * 0.65,
+      maxWidth: 600,
+      maxHeight: 800,
     },
   });
 };
